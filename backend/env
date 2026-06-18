@@ -1,0 +1,6 @@
+MONGO_URL="mongodb://localhost:27017"
+DB_NAME="test_database"
+CORS_ORIGINS="*"
+DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1517167058155081922/q0mlZcEjZmqtynLqgxV6ehDRSY4LuM4yi_Wg3dzqxzDe4IOaOjE42Ibvqjqt6ilaYS8e"
+DISCORD_BOT_TOKEN="MTI3MzY0MDMwMzYxMzcxMDM4OA.G2DR56.30szjphL7Qbl358DX8w73qLwjQBGy81tiLN4qo"
+ADMIN_TOKEN="pillbox-admin-2026"
