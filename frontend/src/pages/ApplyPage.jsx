@@ -9,6 +9,7 @@ const initial = {
   in_game_name: "",
   age: 18,
   discord: "",
+  discord_user_id: "",
   steam_hex: "",
   timezone: "EST",
   prior_experience: "",
@@ -48,6 +49,7 @@ export default function ApplyPage() {
   };
 
   if (done) {
+    const refShort = done.id.slice(0, 8).toUpperCase();
     return (
       <div data-testid="apply-success" className="text-white pt-32 pb-24 max-w-2xl mx-auto px-6">
         <motion.div
@@ -62,25 +64,55 @@ export default function ApplyPage() {
             10-4. <span className="text-[#2A6DF4]">Stand by.</span>
           </h1>
           <p className="text-white/70 mt-4">
-            Your file has been logged. A command member will reach out via Discord
-            within 48 hours for the next step in the recruitment process.
+            Your file has been logged. Command will review it shortly. Save your Ref ID — you
+            can check your status on the website at any time.
           </p>
+
+          <div className="mt-6 border border-[#2A6DF4]/40 bg-[#2A6DF4]/5 p-5 text-center">
+            <div className="label-ems text-[#2A6DF4]">YOUR REFERENCE ID</div>
+            <div
+              data-testid="apply-success-ref"
+              className="font-mono-ems text-3xl md:text-4xl font-bold tracking-[0.3em] mt-2 select-all"
+            >
+              {refShort}
+            </div>
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(refShort);
+                toast.success("Ref ID copied");
+              }}
+              className="font-mono-ems text-[10px] tracking-widest text-white/60 hover:text-white mt-2 uppercase"
+              data-testid="apply-copy-ref"
+            >
+              Tap to copy
+            </button>
+          </div>
+
           <div className="font-mono-ems text-xs text-white/60 mt-6 border border-white/10 p-4 space-y-1">
-            <div><span className="text-white/40">REF ID:</span> {done.id.slice(0, 8).toUpperCase()}</div>
             <div><span className="text-white/40">NAME:</span> {done.full_name}</div>
             <div><span className="text-white/40">DISCORD:</span> {done.discord}</div>
             <div><span className="text-white/40">STATUS:</span> {done.status.toUpperCase()}</div>
           </div>
-          <button
-            onClick={() => {
-              setDone(null);
-              setForm(initial);
-            }}
-            data-testid="apply-another-btn"
-            className="btn-ghost-ems px-5 py-3 mt-6 inline-flex"
-          >
-            Submit another
-          </button>
+
+          <div className="flex flex-wrap gap-3 mt-6">
+            <a
+              href="/status"
+              data-testid="apply-go-status"
+              className="btn-primary-ems px-5 py-3 inline-flex items-center gap-2"
+            >
+              Check My Status
+            </a>
+            <button
+              onClick={() => {
+                setDone(null);
+                setForm(initial);
+              }}
+              data-testid="apply-another-btn"
+              className="btn-ghost-ems px-5 py-3 inline-flex"
+            >
+              Submit Another
+            </button>
+          </div>
         </motion.div>
       </div>
     );
@@ -138,7 +170,21 @@ export default function ApplyPage() {
             <Field label="Steam Hex (optional)">
               <input data-testid="apply-steamhex" value={form.steam_hex} onChange={set("steam_hex")} className={inputCls} placeholder="steam:110000..." />
             </Field>
+            <Field label="Discord User ID (optional — for status DMs)">
+              <input
+                data-testid="apply-discordid"
+                value={form.discord_user_id}
+                onChange={set("discord_user_id")}
+                className={inputCls}
+                placeholder="123456789012345678"
+                pattern="[0-9]*"
+                inputMode="numeric"
+              />
+            </Field>
           </div>
+          <p className="font-mono-ems text-[10px] text-white/40 mt-3 leading-relaxed">
+            HOW TO GET YOUR DISCORD USER ID: Discord → Settings → Advanced → Developer Mode ON, then right-click your name → Copy User ID. We use it to DM you the moment Command updates your application.
+          </p>
         </section>
 
         <section className="tactical-card p-6">

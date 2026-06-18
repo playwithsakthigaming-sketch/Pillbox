@@ -14,6 +14,10 @@ import {
   Inbox,
   Loader2,
   ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  CalendarClock,
+  Undo2,
 } from "lucide-react";
 
 const STORAGE_KEY = "pillbox_admin_token";
@@ -425,19 +429,50 @@ const FieldAdmin = ({ label, children, full, testId }) => (
 );
 
 // ===================== APPLICATIONS =====================
+const STATUS_STYLES = {
+  pending: { label: "PENDING", cls: "bg-white/10 text-white/80 border-white/20" },
+  interview: { label: "INTERVIEW", cls: "bg-[#FFB703]/10 text-[#FFB703] border-[#FFB703]/40" },
+  accepted: { label: "ACCEPTED", cls: "bg-emerald-500/10 text-emerald-400 border-emerald-500/40" },
+  rejected: { label: "REJECTED", cls: "bg-[#ef4444]/10 text-[#ef4444] border-[#ef4444]/40" },
+};
+
 function ApplicationsManager({ token, onUnauth }) {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
+  const [drafts, setDrafts] = useState({}); // { [appId]: messageString }
 
-  useEffect(() => {
+  const auth = { headers: { "X-Admin-Token": token } };
+
+  const load = () => {
+    setLoading(true);
     api
-      .get("/admin/applications", { headers: { "X-Admin-Token": token } })
+      .get("/admin/applications", auth)
       .then((r) => setApps(r.data))
       .catch((e) => {
         if (e?.response?.status === 401) onUnauth();
       })
       .finally(() => setLoading(false));
-  }, [token, onUnauth]);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
+
+  const updateStatus = async (app, status) => {
+    setUpdatingId(app.id);
+    try {
+      const message = drafts[app.id] || "";
+      const r = await api.patch(`/admin/applications/${app.id}`, { status, message }, auth);
+      setApps((prev) => prev.map((a) => (a.id === app.id ? r.data : a)));
+      const dmHint = app.discord_user_id ? " · DM sent" : "";
+      toast.success(`Marked ${STATUS_STYLES[status]?.label || status}${dmHint}`);
+    } catch (e) {
+      if (e?.response?.status === 401) onUnauth();
+      else toast.error(e?.response?.data?.detail || "Could not update status");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -457,33 +492,127 @@ function ApplicationsManager({ token, onUnauth }) {
 
   return (
     <div className="space-y-4" data-testid="applications-list">
-      {apps.map((a) => (
-        <div key={a.id} className="tactical-card p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
-            <div>
-              <div className="label-ems text-[#2A6DF4]">REF · {a.id.slice(0, 8).toUpperCase()}</div>
-              <h3 className="font-display font-bold text-lg mt-0.5">{a.full_name} <span className="text-white/40 text-sm font-normal">· {a.in_game_name}</span></h3>
+      {apps.map((a) => {
+        const style = STATUS_STYLES[a.status] || STATUS_STYLES.pending;
+        const isBusy = updatingId === a.id;
+        return (
+          <div key={a.id} className="tactical-card p-5" data-testid={`app-${a.id.slice(0, 8)}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="label-ems text-[#2A6DF4]">REF · {a.id.slice(0, 8).toUpperCase()}</div>
+                <span className={`font-mono-ems text-[10px] tracking-widest px-2 py-1 border ${style.cls}`}>
+                  {style.label}
+                </span>
+              </div>
+              <div className="font-mono-ems text-[10px] text-white/50 uppercase tracking-widest">
+                {new Date(a.submitted_at).toLocaleString()}
+              </div>
             </div>
-            <div className="font-mono-ems text-[10px] text-white/50 uppercase tracking-widest">
-              {new Date(a.submitted_at).toLocaleString()} · {a.status}
+
+            <h3 className="font-display font-bold text-lg mt-3">
+              {a.full_name}{" "}
+              <span className="text-white/40 text-sm font-normal">· {a.in_game_name}</span>
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 text-sm">
+              <Cell label="Age" value={a.age} />
+              <Cell label="Timezone" value={a.timezone} />
+              <Cell label="Discord" value={a.discord} />
+              <Cell label="Steam" value={a.steam_hex || "—"} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 text-sm">
+              <Cell
+                label="Discord User ID (for DM)"
+                value={a.discord_user_id || "— not provided"}
+              />
+              <Cell
+                label="Last Updated"
+                value={a.reviewed_at ? new Date(a.reviewed_at).toLocaleString() : "—"}
+              />
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <Block label="Prior Experience" value={a.prior_experience} />
+              <Block label="Why Join" value={a.why_join} />
+              <Block label="Availability" value={a.availability} />
+              {a.review_message && (
+                <Block label="Last Review Note" value={a.review_message} />
+              )}
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-white/10">
+              <label className="block">
+                <span className="label-ems">Message to Applicant (sent to Discord + DM)</span>
+                <textarea
+                  rows={2}
+                  value={drafts[a.id] || ""}
+                  onChange={(e) =>
+                    setDrafts((p) => ({ ...p, [a.id]: e.target.value }))
+                  }
+                  placeholder="Optional note — will appear on their status page and in the DM"
+                  data-testid={`app-message-${a.id.slice(0, 8)}`}
+                  className="mt-2 w-full bg-[#121212] border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#2A6DF4]"
+                />
+              </label>
+              <div className="flex flex-wrap gap-2 mt-3">
+                <StatusBtn
+                  testId={`accept-${a.id.slice(0, 8)}`}
+                  busy={isBusy}
+                  onClick={() => updateStatus(a, "accepted")}
+                  className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                >
+                  <CheckCircle2 size={14} /> Accept
+                </StatusBtn>
+                <StatusBtn
+                  testId={`interview-${a.id.slice(0, 8)}`}
+                  busy={isBusy}
+                  onClick={() => updateStatus(a, "interview")}
+                  className="bg-[#FFB703] hover:bg-[#e6a700] text-black"
+                >
+                  <CalendarClock size={14} /> Interview
+                </StatusBtn>
+                <StatusBtn
+                  testId={`reject-${a.id.slice(0, 8)}`}
+                  busy={isBusy}
+                  onClick={() => updateStatus(a, "rejected")}
+                  className="bg-[#ef4444] hover:bg-[#dc2626] text-white"
+                >
+                  <XCircle size={14} /> Reject
+                </StatusBtn>
+                {a.status !== "pending" && (
+                  <StatusBtn
+                    testId={`reopen-${a.id.slice(0, 8)}`}
+                    busy={isBusy}
+                    onClick={() => updateStatus(a, "pending")}
+                    className="bg-transparent border border-white/20 hover:bg-white/5 text-white/70"
+                  >
+                    <Undo2 size={14} /> Re-open
+                  </StatusBtn>
+                )}
+              </div>
+              {!a.discord_user_id && (
+                <p className="font-mono-ems text-[10px] text-white/40 mt-3">
+                  No Discord User ID on file — applicant won't receive a DM, only the channel embed.
+                </p>
+              )}
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 text-sm">
-            <Cell label="Age" value={a.age} />
-            <Cell label="Timezone" value={a.timezone} />
-            <Cell label="Discord" value={a.discord} />
-            <Cell label="Steam" value={a.steam_hex || "—"} />
-          </div>
-          <div className="mt-3 space-y-2">
-            <Block label="Prior Experience" value={a.prior_experience} />
-            <Block label="Why Join" value={a.why_join} />
-            <Block label="Availability" value={a.availability} />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
+
+const StatusBtn = ({ busy, onClick, testId, children, className = "" }) => (
+  <button
+    onClick={onClick}
+    disabled={busy}
+    data-testid={testId}
+    className={`px-4 py-2 inline-flex items-center gap-2 font-display font-bold text-xs tracking-[0.15em] uppercase transition-colors disabled:opacity-60 ${className}`}
+  >
+    {busy ? <Loader2 className="animate-spin" size={14} /> : children}
+  </button>
+);
 
 const Cell = ({ label, value }) => (
   <div>

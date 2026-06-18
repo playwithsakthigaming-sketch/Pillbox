@@ -5,6 +5,7 @@ const links = [
   { to: "/staff", label: "Roster", id: "nav-staff" },
   { to: "/idcard", label: "ID Card", id: "nav-idcard" },
   { to: "/apply", label: "Join Us", id: "nav-apply" },
+  { to: "/status", label: "Status", id: "nav-status" },
 ];
 
 export default function Navbar() {

@@ -38,6 +38,7 @@ export default function Footer() {
               <Link to="/staff" className="text-white/70 hover:text-white">Roster</Link>
               <Link to="/idcard" className="text-white/70 hover:text-white">ID Card</Link>
               <Link to="/apply" className="text-white/70 hover:text-white">Join Us</Link>
+              <Link to="/status" className="text-white/70 hover:text-white">Check Status</Link>
               <Link to="/admin" className="text-white/40 hover:text-white text-xs mt-2">Admin</Link>
             </div>
           </div>

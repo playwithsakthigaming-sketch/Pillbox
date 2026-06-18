@@ -87,6 +87,7 @@ class ApplicationCreate(BaseModel):
     in_game_name: str
     age: int
     discord: str
+    discord_user_id: Optional[str] = ""
     steam_hex: Optional[str] = ""
     timezone: str
     prior_experience: str
@@ -98,7 +99,14 @@ class Application(ApplicationCreate):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     status: str = "pending"
+    review_message: Optional[str] = ""
+    reviewed_at: Optional[datetime] = None
     submitted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ApplicationStatusUpdate(BaseModel):
+    status: str  # accepted | rejected | interview | pending
+    message: Optional[str] = ""
 
 
 class AdminLogin(BaseModel):
@@ -152,6 +160,97 @@ def _send_discord_application(application: Application) -> None:
 
 async def send_discord_application(application: Application) -> None:
     await asyncio.get_event_loop().run_in_executor(None, _send_discord_application, application)
+
+
+# ===================== DISCORD STATUS UPDATE WEBHOOK =====================
+STATUS_COLORS = {
+    "accepted": 0x22C55E,   # green
+    "rejected": 0xEF4444,   # red
+    "interview": 0xFFB703,  # amber
+    "pending":  0x6B7280,   # gray
+}
+
+STATUS_LABELS = {
+    "accepted": "ACCEPTED",
+    "rejected": "REJECTED",
+    "interview": "INTERVIEW SCHEDULED",
+    "pending":  "RE-OPENED (PENDING)",
+}
+
+
+def _send_discord_status(application: Application, status: str, message: str) -> None:
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+    if not webhook_url:
+        return
+    embed = {
+        "title": f"Application {STATUS_LABELS.get(status, status.upper())}",
+        "description": f"**Ref ID:** `{application.id[:8].upper()}`\n**Applicant:** {application.full_name} ({application.in_game_name})",
+        "color": STATUS_COLORS.get(status, 0x2A6DF4),
+        "fields": [
+            {"name": "Discord", "value": application.discord or "—", "inline": True},
+            {"name": "Status", "value": STATUS_LABELS.get(status, status), "inline": True},
+        ],
+        "footer": {"text": "Team Pillbox · EMS Recruitment"},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    if message:
+        embed["fields"].append({"name": "Note from Command", "value": message[:1024], "inline": False})
+
+    try:
+        r = requests.post(webhook_url, json={"username": "Pillbox EMS Recruitment", "embeds": [embed]}, timeout=10)
+        if r.status_code >= 300:
+            logger.warning(f"Discord status webhook {r.status_code}: {r.text[:200]}")
+    except Exception as e:
+        logger.warning(f"Discord status webhook failed: {e}")
+
+
+async def send_discord_status(application: Application, status: str, message: str) -> None:
+    await asyncio.get_event_loop().run_in_executor(None, _send_discord_status, application, status, message)
+
+
+# ===================== DISCORD BOT DM =====================
+def _send_bot_dm(user_id: str, content: str) -> bool:
+    """Open a DM channel with user_id and send `content`. Returns True on success."""
+    token = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
+    if not token or not user_id:
+        return False
+    headers = {
+        "Authorization": f"Bot {token}",
+        "Content-Type": "application/json",
+        "User-Agent": "PillboxEMS (https://pillbox-ems, 1.0)",
+    }
+    try:
+        # 1. Open / get DM channel
+        r = requests.post(
+            "https://discord.com/api/v10/users/@me/channels",
+            headers=headers,
+            json={"recipient_id": str(user_id)},
+            timeout=10,
+        )
+        if r.status_code >= 300:
+            logger.warning(f"Open DM failed {r.status_code}: {r.text[:200]}")
+            return False
+        channel_id = r.json().get("id")
+        if not channel_id:
+            return False
+        # 2. Send the message
+        r2 = requests.post(
+            f"https://discord.com/api/v10/channels/{channel_id}/messages",
+            headers=headers,
+            json={"content": content},
+            timeout=10,
+        )
+        if r2.status_code >= 300:
+            logger.warning(f"Send DM failed {r2.status_code}: {r2.text[:200]}")
+            return False
+        return True
+    except Exception as e:
+        logger.warning(f"Bot DM failed: {e}")
+        return False
+
+
+async def send_bot_dm(user_id: str, content: str) -> bool:
+    return await asyncio.get_event_loop().run_in_executor(None, _send_bot_dm, user_id, content)
 
 
 # ===================== SEED DATA =====================
@@ -322,6 +421,32 @@ async def create_application(payload: ApplicationCreate):
     return app_obj
 
 
+@api_router.get("/applications/status/{ref}")
+async def application_status(ref: str):
+    """Public lookup. `ref` may be the full UUID or the 8-character short ref."""
+    ref = ref.strip().lower()
+    if not ref or len(ref) < 4:
+        raise HTTPException(status_code=400, detail="Reference too short")
+    if len(ref) >= 32:
+        doc = await db.applications.find_one({"id": ref}, {"_id": 0})
+    else:
+        # Match by uuid prefix (first 8 hex chars)
+        doc = await db.applications.find_one(
+            {"id": {"$regex": f"^{ref}"}}, {"_id": 0}
+        )
+    if not doc:
+        raise HTTPException(status_code=404, detail="No application found for that reference")
+    return {
+        "ref_id": doc["id"][:8].upper(),
+        "applicant": doc.get("full_name", ""),
+        "in_game_name": doc.get("in_game_name", ""),
+        "status": doc.get("status", "pending"),
+        "review_message": doc.get("review_message", "") or "",
+        "submitted_at": doc.get("submitted_at"),
+        "reviewed_at": doc.get("reviewed_at"),
+    }
+
+
 @api_router.get("/stats")
 async def stats():
     staff_count = await db.staff.count_documents({})
@@ -387,6 +512,59 @@ async def admin_delete_staff(staff_id: str, _: bool = Depends(require_admin)):
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Staff member not found")
     return {"ok": True, "deleted": staff_id}
+
+
+@api_router.patch("/admin/applications/{application_id}", response_model=Application)
+async def admin_update_application_status(
+    application_id: str,
+    payload: ApplicationStatusUpdate,
+    _: bool = Depends(require_admin),
+):
+    status_value = payload.status.lower().strip()
+    if status_value not in {"accepted", "rejected", "interview", "pending"}:
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    res = await db.applications.update_one(
+        {"id": application_id},
+        {"$set": {
+            "status": status_value,
+            "review_message": payload.message or "",
+            "reviewed_at": now_iso,
+        }},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    doc = await db.applications.find_one({"id": application_id}, {"_id": 0})
+    # Coerce stored ISO strings back to datetimes for the response model
+    for field in ("submitted_at", "reviewed_at"):
+        if isinstance(doc.get(field), str):
+            try:
+                doc[field] = datetime.fromisoformat(doc[field])
+            except Exception:
+                pass
+    app_obj = Application(**doc)
+
+    # Fire-and-forget Discord notifications
+    asyncio.create_task(send_discord_status(app_obj, status_value, payload.message or ""))
+
+    # DM the applicant if we have their Discord user id
+    user_id = (app_obj.discord_user_id or "").strip()
+    if user_id and status_value != "pending":
+        ref = app_obj.id[:8].upper()
+        title = STATUS_LABELS.get(status_value, status_value.upper())
+        dm_body = (
+            f"**Team Pillbox EMS — Application {title}**\n"
+            f"Ref ID: `{ref}`\n"
+            f"Applicant: {app_obj.full_name} ({app_obj.in_game_name})\n"
+        )
+        if payload.message:
+            dm_body += f"\nNote from Command:\n>>> {payload.message}\n"
+        dm_body += "\nYou can re-check your status anytime on the website using your Ref ID."
+        asyncio.create_task(send_bot_dm(user_id, dm_body))
+
+    return app_obj
 
 
 app.include_router(api_router)

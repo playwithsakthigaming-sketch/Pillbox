@@ -7,6 +7,7 @@ import StaffPage from "@/pages/StaffPage";
 import IdCardPage from "@/pages/IdCardPage";
 import ApplyPage from "@/pages/ApplyPage";
 import AdminPage from "@/pages/AdminPage";
+import StatusPage from "@/pages/StatusPage";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
             <Route path="/staff" element={<StaffPage />} />
             <Route path="/idcard" element={<IdCardPage />} />
             <Route path="/apply" element={<ApplyPage />} />
+            <Route path="/status" element={<StatusPage />} />
             <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </main>

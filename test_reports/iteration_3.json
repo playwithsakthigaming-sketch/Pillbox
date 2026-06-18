@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 4 verified end-to-end. Backend: 29/29 pytest pass — new tests cover POST /applications with optional discord_user_id (stored + returned in admin list), GET /applications/status/{ref} for full UUID + 8-char prefix + case-insensitive + 404 (missing) + 400 (too short), PATCH /admin/applications/{id} with token guard (401), invalid status (400), missing id (404), and full status transitions (accepted → interview → rejected → pending). Fire-and-forget Discord webhook + bot DM do not crash the request even with an invalid discord_user_id. Frontend (Playwright on preview URL): /apply now has the optional 'Discord User ID' field, submitting without it succeeds and the success card shows large 8-char REF, copy/status/another buttons; navbar 'Status' link routes to /status; /status accepts lowercase ref and renders status card, bogus ref shows error block; /admin Applications tab renders status badges (PENDING/ACCEPTED), the 'Discord User ID (for DM)' cell, message textarea, and Accept/Interview/Reject/Re-open buttons — Accept transitions card to ACCEPTED with re-open visible; Re-open returns to PENDING and hides itself; 'Marked ...' toasts appear (no DM-sent hint when discord_user_id is absent, matching spec).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/status", "issues": ["When ref < 4 chars the validation error appears but the previously-rendered status card is NOT cleared (handler returns before calling setResult(null)). Minor UX nit — old result and new error are shown together."]},
+      {"screen": "/admin Applications", "issues": ["Re-open button uses white/20 border on dark transparent bg — borderline low contrast vs the strong Accept/Reject buttons. Functional, but visually subordinate which may be intentional."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pillbox_iter4.py",
+    "/app/backend/tests/test_pillbox_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional polish: in StatusPage.submit(), call setResult(null) BEFORE the length-check early-return so the stale card disappears when the user types a too-short ref.",
+    "Consider hiding/clearing the status-error block when typing in the ref input (currently sticky until next submit)."
+  ],
+  "critical_code_review_comments": [
+    "server.py admin_update_application_status: status_value compared after .lower().strip() but never written back canonical — fine since payload is normalised before update.",
+    "DM body and webhook embed are fire-and-forget via asyncio.create_task — task exceptions only logged at the requests level inside the thread executor; an exception escaping the helper would be silently dropped by the task. Acceptable for non-critical side-effect, but consider task.add_done_callback or try/except in the async wrapper for observability.",
+    "STATUS_LABELS uses 'RE-OPENED (PENDING)' for pending — DM is only sent when status != 'pending' (good), but the webhook embed IS still sent on re-open (matches spec, just noting).",
+    "Application response model now includes review_message/reviewed_at; admin list endpoint coerces submitted_at but does NOT coerce reviewed_at — Pydantic still accepts the ISO string for datetime, but for consistency consider coercing both.",
+    "Frontend StatusPage strips non-hex chars from input before lookup — that's fine for UUIDs but means if backend ever changes ref format (e.g., adds letters g-z) the client filter would silently break it. Low-risk for now.",
+    "Carried over from prior iters: deprecated @app.on_event startup/shutdown handlers (FastAPI lifespan is recommended)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pillbox_iter4.py (NEW)"
+  ],
+  "success_rate": {"backend": "100% (29/29)", "frontend": "100% (apply success, navbar Status link, /status lookup + error, admin status transitions accept→re-open)"},
+  "test_credentials": "ADMIN_TOKEN=pillbox-admin-2026 (header X-Admin-Token). Sourced from /app/memory/test_credentials.md.",
+  "seed_data_creation": "Backend tests created 2 TEST_ applications (TEST_Iter4 Applicant w/ discord_user_id='000000000000000001', TEST_Iter4 NoDiscordID). Playwright created 1 more (TEST_PW Iter4, REF 69BADD65). All have TEST_ prefix and remain in DB harmlessly; cycled the first through accepted→interview→rejected→pending. No cleanup performed (no DELETE endpoint for applications).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 4 test file is /app/backend/tests/test_pillbox_iter4.py — kept separate from iter2's test_pillbox_api.py for clarity. Both run cleanly together (29 tests, ~2.5s). DISCORD_WEBHOOK_URL and DISCORD_BOT_TOKEN are LIVE in backend/.env, but backend never blocks on or fails the API call because of Discord errors — outbound 401/404 from Discord are expected when the bot can't DM arbitrary users. Re-open button only appears when status != 'pending' (verified). To find a specific app card use selector [data-testid=\"app-{first-8-of-uuid-lowercase}\"]. There are ~28 TEST_ applications now in the DB from accumulated iterations — fine, but if the dataset matters add a /api/admin/applications/{id} DELETE endpoint.",
+  "rca of the issue": "N/A — no bugs found. All iteration-4 acceptance criteria from the review request satisfied."
+}
