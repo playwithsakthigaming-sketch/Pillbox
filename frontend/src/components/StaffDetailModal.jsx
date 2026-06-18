@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
-import { Award, Clock, Radio, Hash, Shield, X } from "lucide-react";
+import { Award, Clock, MapPin, Shield } from "lucide-react";
 
 const Row = ({ label, value, mono = true, testId }) => (
   <div className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
@@ -65,7 +65,6 @@ export default function StaffDetailModal({ staff, open, onOpenChange }) {
               <Row testId="staff-detail-badge" label="Badge" value={staff.badge_number} />
               <Row testId="staff-detail-callsign" label="Callsign" value={staff.callsign} />
               <Row testId="staff-detail-years" label="Years Served" value={staff.years_served} />
-              <Row testId="staff-detail-responses" label="Responses" value={staff.response_count.toLocaleString()} />
               <Row testId="staff-detail-role" label="Role" value={staff.role} mono={false} />
               <Row testId="staff-detail-discord" label="Discord" value={staff.contact_discord || "—"} />
             </div>
@@ -99,6 +98,37 @@ export default function StaffDetailModal({ staff, open, onOpenChange }) {
                 ))}
               </ul>
             </div>
+
+            {staff.experience_cities && staff.experience_cities.length > 0 && (
+              <div className="mt-4" data-testid="staff-detail-cities">
+                <div className="label-ems flex items-center gap-2">
+                  <MapPin size={12} /> City Experience
+                </div>
+                <div className="mt-2 grid grid-cols-1 gap-2">
+                  {staff.experience_cities.map((c, i) => (
+                    <div
+                      key={`${c.city}-${i}`}
+                      className="flex items-center justify-between gap-3 border border-white/10 bg-[#0d0d0d] px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <MapPin size={12} className="text-[#2A6DF4]" />
+                        <span className="font-display font-bold text-sm">{c.city}</span>
+                      </div>
+                      <div className="flex items-center gap-3 font-mono-ems text-[11px] text-white/70">
+                        {c.grade && (
+                          <span className="px-2 py-0.5 border border-white/15 uppercase tracking-wider">
+                            {c.grade}
+                          </span>
+                        )}
+                        <span className="inline-flex items-center gap-1">
+                          <Clock size={11} /> {c.months} mo
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

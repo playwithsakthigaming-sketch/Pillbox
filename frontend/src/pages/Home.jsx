@@ -7,8 +7,7 @@ import { ArrowRight, Activity, Radio, Award, MapPin } from "lucide-react";
 export default function Home() {
   const [stats, setStats] = useState({
     active_personnel: 0,
-    applications_received: 0,
-    total_responses: 0,
+    teams_in_cities: 0,
     years_in_service: 0,
   });
 
@@ -108,12 +107,11 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.4 }}
-            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-px bg-white/10 border border-white/10"
+            className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 border border-white/10"
           >
             <Stat icon={<Activity size={14} />} label="Active Personnel" value={stats.active_personnel} testId="stat-personnel" />
-            <Stat icon={<Radio size={14} />} label="Total Responses" value={stats.total_responses.toLocaleString()} testId="stat-responses" />
+            <Stat icon={<MapPin size={14} />} label="Teams In Cities" value={stats.teams_in_cities} testId="stat-cities" />
             <Stat icon={<Award size={14} />} label="Years In Service" value={stats.years_in_service} testId="stat-years" />
-            <Stat icon={<MapPin size={14} />} label="Applications" value={stats.applications_received} testId="stat-apps" />
           </motion.div>
         </div>
       </section>

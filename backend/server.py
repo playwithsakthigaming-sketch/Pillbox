@@ -31,6 +31,12 @@ api_router = APIRouter(prefix="/api")
 
 
 # ===================== MODELS =====================
+class CityExperience(BaseModel):
+    city: str
+    grade: str = ""
+    months: int = 0
+
+
 class StaffMember(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -45,7 +51,7 @@ class StaffMember(BaseModel):
     bio: str = ""
     certifications: List[str] = Field(default_factory=list)
     specialties: List[str] = Field(default_factory=list)
-    response_count: int = 0
+    experience_cities: List[CityExperience] = Field(default_factory=list)
     is_command: bool = False
     contact_discord: Optional[str] = None
 
@@ -61,7 +67,7 @@ class StaffCreate(BaseModel):
     bio: str = ""
     certifications: List[str] = Field(default_factory=list)
     specialties: List[str] = Field(default_factory=list)
-    response_count: int = 0
+    experience_cities: List[CityExperience] = Field(default_factory=list)
     is_command: bool = False
     contact_discord: Optional[str] = None
 
@@ -77,7 +83,7 @@ class StaffUpdate(BaseModel):
     bio: Optional[str] = None
     certifications: Optional[List[str]] = None
     specialties: Optional[List[str]] = None
-    response_count: Optional[int] = None
+    experience_cities: Optional[List[CityExperience]] = None
     is_command: Optional[bool] = None
     contact_discord: Optional[str] = None
 
@@ -266,7 +272,7 @@ SEED_STAFF: List[dict] = [
         "bio": "Founder of the Pillbox EMS division. Veteran first responder with a calm head and a sharp tactical mind. Built the SOP playbook the rest of the department runs on.",
         "certifications": ["Advanced Cardiac Life Support", "Trauma Specialist", "Incident Commander", "Hazmat Lvl-3"],
         "specialties": ["Mass-casualty triage", "Command operations", "Department training"],
-        "response_count": 4112,
+        "experience_cities": [{"city": "Los Santos", "grade": "Senior", "months": 24}, {"city": "Paleto Bay", "grade": "Intermediate", "months": 8}],
         "is_command": True,
         "contact_discord": "doc.reyes",
     },
@@ -281,7 +287,7 @@ SEED_STAFF: List[dict] = [
         "bio": "Runs day-to-day field ops. Known for night-shift heroics and a no-nonsense approach to triage during multi-vehicle incidents downtown.",
         "certifications": ["Critical Care Paramedic", "Tactical Medic", "Helicopter Operations"],
         "specialties": ["Field operations", "Air-rescue coordination"],
-        "response_count": 3201,
+        "experience_cities": [{"city": "Los Santos", "grade": "Senior", "months": 24}, {"city": "Paleto Bay", "grade": "Intermediate", "months": 8}],
         "is_command": True,
         "contact_discord": "lena.v",
     },
@@ -296,7 +302,7 @@ SEED_STAFF: List[dict] = [
         "bio": "Designs the academy curriculum every new EMT runs through. Calm instructor on the radio, brutal evaluator on the practice mat.",
         "certifications": ["Lead Instructor", "ACLS", "Pediatric Advanced Life Support"],
         "specialties": ["New-hire onboarding", "Skills certification"],
-        "response_count": 1880,
+        "experience_cities": [{"city": "Los Santos", "grade": "Senior", "months": 24}, {"city": "Paleto Bay", "grade": "Intermediate", "months": 8}],
         "is_command": True,
         "contact_discord": "hiro.t",
     },
@@ -311,7 +317,7 @@ SEED_STAFF: List[dict] = [
         "bio": "City-wide reputation for impossible saves. First on-scene at the Vinewood pile-up. Carries a personal trauma kit upgraded with her own custom mods.",
         "certifications": ["Advanced Trauma", "ACLS"],
         "specialties": ["Trauma response", "High-speed transport"],
-        "response_count": 1564,
+        "experience_cities": [{"city": "Los Santos", "grade": "Senior", "months": 24}, {"city": "Paleto Bay", "grade": "Intermediate", "months": 8}],
         "is_command": False,
         "contact_discord": "sasha.o",
     },
@@ -326,7 +332,7 @@ SEED_STAFF: List[dict] = [
         "bio": "Helicopter pilot turned paramedic. Coordinates Pillbox-1 air rescue. Has logged more rotor hours than anyone else in the department.",
         "certifications": ["Air Medical Crew", "Critical Care"],
         "specialties": ["Air rescue", "Mountain extraction"],
-        "response_count": 902,
+        "experience_cities": [{"city": "Los Santos", "grade": "Senior", "months": 24}, {"city": "Paleto Bay", "grade": "Intermediate", "months": 8}],
         "is_command": False,
         "contact_discord": "diego.m",
     },
@@ -341,7 +347,7 @@ SEED_STAFF: List[dict] = [
         "bio": "Sharp eye for spotting overdose calls in the alleys behind Strawberry. Volunteered for the night-shift block almost every week last quarter.",
         "certifications": ["EMT-B", "Naloxone Lead"],
         "specialties": ["Street response", "Overdose intervention"],
-        "response_count": 612,
+        "experience_cities": [{"city": "Los Santos", "grade": "Senior", "months": 24}, {"city": "Paleto Bay", "grade": "Intermediate", "months": 8}],
         "is_command": False,
         "contact_discord": "rin.k",
     },
@@ -356,7 +362,7 @@ SEED_STAFF: List[dict] = [
         "bio": "Came up through the academy under Captain Tanaka. Quietly competent, never panics on the radio.",
         "certifications": ["EMT-B"],
         "specialties": ["Patient transport", "Scene support"],
-        "response_count": 188,
+        "experience_cities": [{"city": "Los Santos", "grade": "Senior", "months": 24}, {"city": "Paleto Bay", "grade": "Intermediate", "months": 8}],
         "is_command": False,
         "contact_discord": "owen.b",
     },
@@ -371,7 +377,7 @@ SEED_STAFF: List[dict] = [
         "bio": "Just out of the academy. Ride-alongs only for now, but already shows the instincts of someone twice her service time.",
         "certifications": ["EMT-B (Probationary)"],
         "specialties": ["Learning"],
-        "response_count": 24,
+        "experience_cities": [{"city": "Los Santos", "grade": "Senior", "months": 24}, {"city": "Paleto Bay", "grade": "Intermediate", "months": 8}],
         "is_command": False,
         "contact_discord": "priya.a",
     },
@@ -380,6 +386,19 @@ SEED_STAFF: List[dict] = [
 
 @app.on_event("startup")
 async def seed_staff():
+    # Migration: drop legacy response_count, ensure experience_cities exists.
+    try:
+        await db.staff.update_many(
+            {"response_count": {"$exists": True}},
+            {"$unset": {"response_count": ""}},
+        )
+        await db.staff.update_many(
+            {"experience_cities": {"$exists": False}},
+            {"$set": {"experience_cities": []}},
+        )
+    except Exception as e:
+        logger.warning(f"Staff migration failed: {e}")
+
     existing = await db.staff.count_documents({})
     if existing == 0:
         docs = [StaffMember(**s).model_dump() for s in SEED_STAFF]
@@ -450,17 +469,11 @@ async def application_status(ref: str):
 @api_router.get("/stats")
 async def stats():
     staff_count = await db.staff.count_documents({})
-    apps_count = await db.applications.count_documents({})
-    cursor = db.staff.aggregate([
-        {"$group": {"_id": None, "total": {"$sum": "$response_count"}}}
-    ])
-    total_responses = 0
-    async for row in cursor:
-        total_responses = row.get("total", 0)
+    # Count distinct cities across all staff experience_cities entries
+    distinct_cities = await db.staff.distinct("experience_cities.city")
     return {
         "active_personnel": staff_count,
-        "applications_received": apps_count,
-        "total_responses": total_responses,
+        "teams_in_cities": len(distinct_cities),
         "years_in_service": 8,
     }
 

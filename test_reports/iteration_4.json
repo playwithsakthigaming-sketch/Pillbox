@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 5 verified end-to-end. Backend: 37/37 pytest pass — new iter5 test file covers GET /api/staff (experience_cities present, response_count absent, months is int), GET /api/stats (exactly 3 keys: active_personnel/teams_in_cities/years_in_service, no total_responses, no applications_received; teams_in_cities equals distinct city count derived from staff.experience_cities), POST /api/admin/staff with experience_cities round-trips and persists, PATCH /api/admin/staff/{id} updates experience_cities and persists, type validation returns 422 on both POST and PATCH when months='abc', and 'response_count' sent by a client is silently dropped (extra='ignore'). Updated iter2 test_pillbox_api.py to drop legacy response_count references and adjust stats key set. Frontend (Playwright on preview URL): /home stats grid has 3 tiles (Active Personnel=1, Teams In Cities=2, Years In Service=8), no 'Total Responses' or standalone 'Applications' tile. /roster opens Ms Trisha's detail modal — 'Responses' row is GONE, City Experience section renders with [data-testid=staff-detail-cities] showing Los Santos · SENIOR · 18 mo and Paleto Bay · LEAD · 6 mo. /admin StaffEditor: no 'Response Count' input; editor-cities block + city-add-btn create a row with city-name-{i} / city-grade-{i} / city-months-{i} / city-remove-{i}; saving TEST_UI Iter5 with city Strawberry/Expert/15 persists — re-opening the editor reads back the row exactly. Cleanup deletes the test staff. IDCard component scanned: no response_count references in any frontend source file.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "StaffDetailModal", "issues": ["Dialog console warning: 'Missing Description or aria-describedby={undefined} for DialogContent' — accessibility nit carried over from prior iterations, not introduced by iter5."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_pillbox_iter5.py",
+    "/app/backend/tests/test_pillbox_iter4.py",
+    "/app/backend/tests/test_pillbox_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Optional: add a DialogDescription (or aria-describedby) to StaffDetailModal to silence the Radix accessibility warning."
+  ],
+  "critical_code_review_comments": [
+    "server.py CityExperience model uses int for months with default 0 — Pydantic accepts numeric strings ('12') and coerces them, but rejects non-numeric ('abc') with 422. Matches the spec.",
+    "GET /api/stats uses db.staff.distinct('experience_cities.city') — returns distinct city values across the array elements. Empty strings would technically count as a distinct value; current data only has non-empty cities so this is fine, but a server-side aggregation filter ({$ne: ''}) would be safer if blank cities ever leak.",
+    "Startup migration $unset response_count and $set experience_cities=[] when missing — idempotent and safe. Note FastAPI @app.on_event('startup') is deprecated; lifespan is recommended (carried over).",
+    "AdminPage.normalize() trims city/grade and Number()-coerces months, filtering out rows without a city — good defensive layer, but the empty-city rows are silently dropped client-side; consider surfacing a hint to the admin.",
+    "StaffMember has extra='ignore' so a client posting response_count is dropped silently. Confirmed via test_no_response_count_in_admin_create_response.",
+    "Home.jsx stats grid is grid-cols-1 md:grid-cols-3 — confirmed 3 tiles render."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pillbox_iter5.py (NEW)",
+    "/app/backend/tests/test_pillbox_api.py (updated: removed response_count from REQUIRED_STAFF_FIELDS + NEW_STAFF_PAYLOAD, updated /api/stats expected keys, relaxed seed-count assertion since DB has 1 staff per agent context)"
+  ],
+  "success_rate": {"backend": "100% (37/37)", "frontend": "100% (home 3-stat grid, modal city section, admin editor city CRUD round-trip)"},
+  "test_credentials": "ADMIN_TOKEN=pillbox-admin-2026 (header X-Admin-Token). Sourced from /app/memory/test_credentials.md.",
+  "seed_data_creation": "All test data is created and cleaned up within each test (TEST_Iter5 Cities/Patch/BadMonths/BadCreate/ExtraField + UI-created TEST_UI Iter5 deleted via UI). Final DB state matches pre-test state (1 staff: Ms Trisha with 2 experience_cities).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iter5 test file is /app/backend/tests/test_pillbox_iter5.py. test_pillbox_api.py was updated to remove obsolete response_count references and to relax the '>=8 seeded' assertion to '>=1' since the seeder only runs when staff collection is empty and the admin has already replaced the seed with a single live staff member (Ms Trisha, EMS-01, P-01) with experience_cities=[Los Santos/Senior/18, Paleto Bay/Lead/6]. /api/stats currently returns {active_personnel:1, teams_in_cities:2, years_in_service:8}. Browser headless_shell failed once mid-suite with SIGSEGV when re-launching for /idcard route — flake unrelated to app code; iframe scan of source confirmed zero response_count references anywhere in frontend src.",
+  "rca of the issue": "N/A — no bugs found. All iteration-5 acceptance criteria satisfied: response_count fully removed from backend model/storage/UI/ID card; experience_cities added with proper validation; /api/stats returns exactly 3 keys with teams_in_cities computed from distinct cities; admin editor has city sub-editor with all required testids; staff modal shows City Experience section with data-testid=staff-detail-cities."
+}

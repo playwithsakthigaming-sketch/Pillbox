@@ -18,6 +18,7 @@ import {
   XCircle,
   CalendarClock,
   Undo2,
+  MapPin,
 } from "lucide-react";
 
 const STORAGE_KEY = "pillbox_admin_token";
@@ -33,7 +34,7 @@ const emptyStaff = {
   bio: "",
   certifications: "",
   specialties: "",
-  response_count: 0,
+  experience_cities: [],
   is_command: false,
   contact_discord: "",
 };
@@ -314,7 +315,13 @@ const normalize = (data) => ({
   specialties: Array.isArray(data.specialties)
     ? data.specialties
     : (data.specialties || "").split(",").map((s) => s.trim()).filter(Boolean),
-  response_count: Number(data.response_count || 0),
+  experience_cities: (data.experience_cities || [])
+    .map((c) => ({
+      city: (c.city || "").trim(),
+      grade: (c.grade || "").trim(),
+      months: Number(c.months || 0),
+    }))
+    .filter((c) => c.city),
   is_command: !!data.is_command,
   contact_discord: data.contact_discord || "",
 });
@@ -324,12 +331,31 @@ function StaffEditor({ initial, isNew, onCancel, onSave }) {
     ...initial,
     certifications: Array.isArray(initial.certifications) ? initial.certifications.join(", ") : initial.certifications || "",
     specialties: Array.isArray(initial.specialties) ? initial.specialties.join(", ") : initial.specialties || "",
+    experience_cities: Array.isArray(initial.experience_cities) ? initial.experience_cities : [],
   }));
 
   const set = (k) => (e) => {
     const v = e.target.type === "checkbox" ? e.target.checked : e.target.value;
     setForm((p) => ({ ...p, [k]: v }));
   };
+
+  const updateCity = (idx, key, val) => {
+    setForm((p) => {
+      const next = [...(p.experience_cities || [])];
+      next[idx] = { ...next[idx], [key]: val };
+      return { ...p, experience_cities: next };
+    });
+  };
+  const addCity = () =>
+    setForm((p) => ({
+      ...p,
+      experience_cities: [...(p.experience_cities || []), { city: "", grade: "", months: 0 }],
+    }));
+  const removeCity = (idx) =>
+    setForm((p) => ({
+      ...p,
+      experience_cities: (p.experience_cities || []).filter((_, i) => i !== idx),
+    }));
 
   return (
     <div
@@ -369,9 +395,6 @@ function StaffEditor({ initial, isNew, onCancel, onSave }) {
           <FieldAdmin label="Years Served">
             <input type="number" value={form.years_served} onChange={set("years_served")} className={inp} />
           </FieldAdmin>
-          <FieldAdmin label="Response Count">
-            <input type="number" value={form.response_count} onChange={set("response_count")} className={inp} />
-          </FieldAdmin>
           <FieldAdmin label="Discord">
             <input value={form.contact_discord} onChange={set("contact_discord")} className={inp} />
           </FieldAdmin>
@@ -387,6 +410,67 @@ function StaffEditor({ initial, isNew, onCancel, onSave }) {
           <FieldAdmin label="Bio" full>
             <textarea rows={3} value={form.bio} onChange={set("bio")} className={inp} />
           </FieldAdmin>
+
+          {/* City Experience editor */}
+          <div className="md:col-span-2 mt-2 border border-white/10 p-4 bg-[#0d0d0d]" data-testid="editor-cities">
+            <div className="flex items-center justify-between mb-3">
+              <div className="label-ems flex items-center gap-2">
+                <MapPin size={12} /> City Experience
+              </div>
+              <button
+                type="button"
+                onClick={addCity}
+                data-testid="city-add-btn"
+                className="btn-ghost-ems px-3 py-1.5 text-[10px] inline-flex items-center gap-1"
+              >
+                <Plus size={12} /> Add City
+              </button>
+            </div>
+            {(form.experience_cities || []).length === 0 ? (
+              <div className="font-mono-ems text-[10px] text-white/40 tracking-widest py-2">
+                NO CITY EXPERIENCE ON FILE
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {form.experience_cities.map((c, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center" data-testid={`city-row-${i}`}>
+                    <input
+                      placeholder="City name"
+                      value={c.city || ""}
+                      onChange={(e) => updateCity(i, "city", e.target.value)}
+                      className={`${inp} col-span-5`}
+                      data-testid={`city-name-${i}`}
+                    />
+                    <input
+                      placeholder="Grade"
+                      value={c.grade || ""}
+                      onChange={(e) => updateCity(i, "grade", e.target.value)}
+                      className={`${inp} col-span-4`}
+                      data-testid={`city-grade-${i}`}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Months"
+                      value={c.months || 0}
+                      onChange={(e) => updateCity(i, "months", e.target.value)}
+                      className={`${inp} col-span-2`}
+                      data-testid={`city-months-${i}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeCity(i)}
+                      className="col-span-1 p-2 text-white/60 hover:text-[#ef4444] flex items-center justify-center"
+                      data-testid={`city-remove-${i}`}
+                      aria-label="Remove city"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <label className="flex items-center gap-2 mt-2 md:col-span-2">
             <input
               type="checkbox"

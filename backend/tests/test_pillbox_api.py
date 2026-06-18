@@ -24,7 +24,7 @@ AUTH_HEADERS = {"X-Admin-Token": ADMIN_TOKEN}
 REQUIRED_STAFF_FIELDS = {
     "id", "name", "callsign", "rank", "role", "badge_number",
     "photo_url", "bio", "certifications", "specialties",
-    "years_served", "response_count", "is_command",
+    "years_served", "experience_cities", "is_command",
 }
 
 
@@ -47,11 +47,14 @@ def test_list_staff(session):
     assert r.status_code == 200, r.text
     data = r.json()
     assert isinstance(data, list)
-    assert len(data) >= 8, f"Expected >=8 seeded staff, got {len(data)}"
+    assert len(data) >= 1, f"Expected at least 1 staff member, got {len(data)}"
     for member in data:
         missing = REQUIRED_STAFF_FIELDS - set(member.keys())
         assert not missing, f"Missing fields: {missing}"
-    assert data[0]["is_command"] is True
+    # First element should be command-rank if any command staff exist (sort puts is_command first)
+    any_command = any(m.get("is_command") for m in data)
+    if any_command:
+        assert data[0]["is_command"] is True
 
 
 def test_get_staff_by_id(session):
@@ -105,8 +108,12 @@ def test_stats(session):
     r = session.get(f"{API}/stats")
     assert r.status_code == 200
     data = r.json()
-    for key in ["active_personnel", "applications_received", "total_responses", "years_in_service"]:
-        assert key in data and isinstance(data[key], int)
+    # Iteration 5: only 3 keys, no total_responses, no applications_received
+    assert set(data.keys()) == {"active_personnel", "teams_in_cities", "years_in_service"}
+    for key in ["active_personnel", "teams_in_cities", "years_in_service"]:
+        assert isinstance(data[key], int)
+    assert "total_responses" not in data
+    assert "applications_received" not in data
 
 
 # ===== ADMIN LOGIN =====
@@ -148,7 +155,6 @@ NEW_STAFF_PAYLOAD = {
     "bio": "Created during automated tests.",
     "certifications": ["EMT-B"],
     "specialties": ["Testing"],
-    "response_count": 0,
     "is_command": False,
     "contact_discord": "test.bot",
 }
