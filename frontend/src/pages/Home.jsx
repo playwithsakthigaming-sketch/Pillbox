@@ -94,11 +94,11 @@ export default function Home() {
               View Roster
             </Link>
             <Link
-              to="/idcard"
-              data-testid="hero-idcard-btn"
+              to="/gallery"
+              data-testid="hero-gallery-btn"
               className="btn-ghost-ems px-6 py-3.5 inline-flex items-center gap-2"
             >
-              ID Generator
+              Gallery
             </Link>
           </motion.div>
 
@@ -180,11 +180,11 @@ export default function Home() {
                 Submit Application <ArrowRight size={16} />
               </Link>
               <Link
-                to="/idcard"
-                data-testid="cta-id-btn"
+                to="/gallery"
+                data-testid="cta-gallery-btn"
                 className="btn-ghost-ems px-7 py-4 inline-flex items-center gap-2"
               >
-                Generate ID Card
+                View Gallery
               </Link>
             </div>
           </div>

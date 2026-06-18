@@ -115,6 +115,22 @@ class ApplicationStatusUpdate(BaseModel):
     message: Optional[str] = ""
 
 
+class GalleryItem(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    image_data: str  # data URL (data:image/...;base64,...)
+    caption: str = ""
+    source: str = "admin"  # "admin" | "discord"
+    uploaded_by: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GalleryCreate(BaseModel):
+    image_data: str
+    caption: str = ""
+    uploaded_by: str = ""
+
+
 class AdminLogin(BaseModel):
     token: str
 
@@ -257,6 +273,50 @@ def _send_bot_dm(user_id: str, content: str) -> bool:
 
 async def send_bot_dm(user_id: str, content: str) -> bool:
     return await asyncio.get_event_loop().run_in_executor(None, _send_bot_dm, user_id, content)
+
+
+# ===================== DISCORD GALLERY WEBHOOK =====================
+import base64
+import re
+
+DATA_URL_RE = re.compile(r"^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$", re.DOTALL)
+
+
+def _send_gallery_webhook(image_data: str, caption: str) -> None:
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+    if not webhook_url:
+        return
+    m = DATA_URL_RE.match(image_data or "")
+    if not m:
+        return
+    mime, b64 = m.group(1), m.group(2)
+    try:
+        binary = base64.b64decode(b64, validate=False)
+    except Exception:
+        return
+    ext = mime.split("/")[-1].lower()
+    if ext == "jpeg":
+        ext = "jpg"
+    filename = f"gallery.{ext}"
+    payload_json = {
+        "username": "Pillbox EMS Gallery",
+        "content": (caption or "")[:1900] or None,
+    }
+    try:
+        r = requests.post(
+            webhook_url,
+            data={"payload_json": __import__("json").dumps(payload_json)},
+            files={"file": (filename, binary, mime)},
+            timeout=15,
+        )
+        if r.status_code >= 300:
+            logger.warning(f"Gallery webhook {r.status_code}: {r.text[:200]}")
+    except Exception as e:
+        logger.warning(f"Gallery webhook failed: {e}")
+
+
+async def send_gallery_webhook(image_data: str, caption: str) -> None:
+    await asyncio.get_event_loop().run_in_executor(None, _send_gallery_webhook, image_data, caption)
 
 
 # ===================== SEED DATA =====================
@@ -525,6 +585,66 @@ async def admin_delete_staff(staff_id: str, _: bool = Depends(require_admin)):
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Staff member not found")
     return {"ok": True, "deleted": staff_id}
+
+
+@api_router.delete("/admin/applications/{application_id}")
+async def admin_delete_application(application_id: str, _: bool = Depends(require_admin)):
+    res = await db.applications.delete_one({"id": application_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+    return {"ok": True, "deleted": application_id}
+
+
+# ===================== GALLERY =====================
+MAX_GALLERY_BYTES = 5 * 1024 * 1024  # 5 MB after base64 decode
+
+
+@api_router.get("/gallery")
+async def gallery_list():
+    cursor = db.gallery.find({}, {"_id": 0}).sort("created_at", -1).limit(200)
+    items = await cursor.to_list(200)
+    for it in items:
+        if isinstance(it.get("created_at"), str):
+            # leave as-is for JSON; client handles parse
+            pass
+    return items
+
+
+@api_router.post("/admin/gallery", response_model=GalleryItem)
+async def admin_gallery_create(payload: GalleryCreate, _: bool = Depends(require_admin)):
+    if not payload.image_data or not payload.image_data.startswith("data:image/"):
+        raise HTTPException(status_code=400, detail="image_data must be a data:image/...;base64 URL")
+    m = DATA_URL_RE.match(payload.image_data)
+    if not m:
+        raise HTTPException(status_code=400, detail="Invalid image data URL")
+    try:
+        size = len(base64.b64decode(m.group(2), validate=False))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid base64 payload")
+    if size > MAX_GALLERY_BYTES:
+        raise HTTPException(status_code=413, detail=f"Image too large (max {MAX_GALLERY_BYTES // 1024 // 1024} MB)")
+
+    item = GalleryItem(
+        image_data=payload.image_data,
+        caption=(payload.caption or "")[:500],
+        source="admin",
+        uploaded_by=(payload.uploaded_by or "command")[:80],
+    )
+    doc = item.model_dump()
+    doc["created_at"] = doc["created_at"].isoformat()
+    await db.gallery.insert_one(doc)
+
+    # Fire-and-forget Discord post with the actual image
+    asyncio.create_task(send_gallery_webhook(payload.image_data, payload.caption or ""))
+    return item
+
+
+@api_router.delete("/admin/gallery/{item_id}")
+async def admin_gallery_delete(item_id: str, _: bool = Depends(require_admin)):
+    res = await db.gallery.delete_one({"id": item_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Gallery item not found")
+    return {"ok": True, "deleted": item_id}
 
 
 @api_router.patch("/admin/applications/{application_id}", response_model=Application)

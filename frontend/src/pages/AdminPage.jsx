@@ -19,6 +19,8 @@ import {
   CalendarClock,
   Undo2,
   MapPin,
+  Image as ImageIcon,
+  Upload,
 } from "lucide-react";
 
 const STORAGE_KEY = "pillbox_admin_token";
@@ -74,18 +76,23 @@ export default function AdminPage() {
           </button>
         </div>
 
-        <div className="mt-8 inline-flex border border-white/10 bg-[#0d0d0d]">
+        <div className="mt-8 inline-flex border border-white/10 bg-[#0d0d0d] flex-wrap">
           <TabBtn active={tab === "staff"} onClick={() => setTab("staff")} testId="tab-staff">
             <Users size={14} /> Staff
           </TabBtn>
           <TabBtn active={tab === "applications"} onClick={() => setTab("applications")} testId="tab-apps">
             <Inbox size={14} /> Applications
           </TabBtn>
+          <TabBtn active={tab === "gallery"} onClick={() => setTab("gallery")} testId="tab-gallery">
+            <ImageIcon size={14} /> Gallery
+          </TabBtn>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 lg:px-10 mt-8">
-        {tab === "staff" ? <StaffManager token={token} onUnauth={logout} /> : <ApplicationsManager token={token} onUnauth={logout} />}
+        {tab === "staff" && <StaffManager token={token} onUnauth={logout} />}
+        {tab === "applications" && <ApplicationsManager token={token} onUnauth={logout} />}
+        {tab === "gallery" && <GalleryManager token={token} onUnauth={logout} />}
       </main>
     </div>
   );
@@ -558,6 +565,18 @@ function ApplicationsManager({ token, onUnauth }) {
     }
   };
 
+  const deleteApp = async (app) => {
+    if (!window.confirm(`Permanently delete application from ${app.full_name}? This cannot be undone.`)) return;
+    try {
+      await api.delete(`/admin/applications/${app.id}`, auth);
+      setApps((prev) => prev.filter((a) => a.id !== app.id));
+      toast.success("Application deleted");
+    } catch (e) {
+      if (e?.response?.status === 401) onUnauth();
+      else toast.error(e?.response?.data?.detail || "Delete failed");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-white/60 font-mono-ems text-sm">
@@ -673,6 +692,14 @@ function ApplicationsManager({ token, onUnauth }) {
                     <Undo2 size={14} /> Re-open
                   </StatusBtn>
                 )}
+                <StatusBtn
+                  testId={`delete-app-${a.id.slice(0, 8)}`}
+                  busy={isBusy}
+                  onClick={() => deleteApp(a)}
+                  className="bg-transparent border border-[#ef4444]/40 hover:bg-[#ef4444]/10 text-[#ef4444] ml-auto"
+                >
+                  <Trash2 size={14} /> Delete
+                </StatusBtn>
               </div>
               {!a.discord_user_id && (
                 <p className="font-mono-ems text-[10px] text-white/40 mt-3">
@@ -711,3 +738,179 @@ const Block = ({ label, value }) => (
     <div className="text-white/80 text-sm mt-0.5 whitespace-pre-wrap">{value || "—"}</div>
   </div>
 );
+
+
+// ===================== GALLERY MANAGER =====================
+function GalleryManager({ token, onUnauth }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [preview, setPreview] = useState(""); // data URL
+  const [uploadedBy, setUploadedBy] = useState("Command");
+
+  const auth = { headers: { "X-Admin-Token": token } };
+
+  const load = () => {
+    setLoading(true);
+    api
+      .get("/gallery")
+      .then((r) => setItems(r.data))
+      .finally(() => setLoading(false));
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { load(); }, []);
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image too large. Max 5 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const upload = async () => {
+    if (!preview) {
+      toast.error("Pick an image first.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const r = await api.post(
+        "/admin/gallery",
+        { image_data: preview, caption, uploaded_by: uploadedBy },
+        auth
+      );
+      setItems((prev) => [r.data, ...prev]);
+      setPreview("");
+      setCaption("");
+      toast.success("Uploaded · posted to Discord");
+    } catch (e) {
+      if (e?.response?.status === 401) onUnauth();
+      else toast.error(e?.response?.data?.detail || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const remove = async (item) => {
+    if (!window.confirm("Delete this image?")) return;
+    try {
+      await api.delete(`/admin/gallery/${item.id}`, auth);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      toast.success("Image deleted");
+    } catch (e) {
+      if (e?.response?.status === 401) onUnauth();
+      else toast.error("Delete failed");
+    }
+  };
+
+  return (
+    <section data-testid="gallery-manager">
+      <div className="tactical-card p-6">
+        <div className="label-ems text-[#2A6DF4] mb-4">UPLOAD · NEW IMAGE</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block">
+              <span className="label-ems block mb-1.5">Image (max 5 MB)</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFile}
+                data-testid="gallery-file-input"
+                className="block w-full text-xs font-mono-ems text-white/70 file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-[#2A6DF4] file:text-white file:font-display file:font-bold file:tracking-wider file:uppercase file:cursor-pointer"
+              />
+            </label>
+            <label className="block mt-3">
+              <span className="label-ems block mb-1.5">Caption (optional)</span>
+              <textarea
+                rows={3}
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                data-testid="gallery-caption-input"
+                placeholder="Vinewood pile-up · 03:42 dispatch"
+                className={inp}
+              />
+            </label>
+            <label className="block mt-3">
+              <span className="label-ems block mb-1.5">Uploaded By</span>
+              <input
+                value={uploadedBy}
+                onChange={(e) => setUploadedBy(e.target.value)}
+                className={inp}
+                data-testid="gallery-uploadedby-input"
+              />
+            </label>
+            <button
+              data-testid="gallery-upload-btn"
+              disabled={uploading || !preview}
+              onClick={upload}
+              className="btn-primary-ems px-5 py-3 mt-4 inline-flex items-center gap-2 disabled:opacity-60"
+            >
+              {uploading ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+              Upload &amp; Post to Discord
+            </button>
+          </div>
+          <div className="border border-white/10 bg-[#0d0d0d] aspect-square flex items-center justify-center overflow-hidden">
+            {preview ? (
+              <img src={preview} alt="preview" className="w-full h-full object-cover" />
+            ) : (
+              <div className="font-mono-ems text-[10px] text-white/40 tracking-widest">
+                NO IMAGE SELECTED
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <div className="label-ems mb-3">Gallery · {items.length} image(s)</div>
+        {loading ? (
+          <div className="flex items-center gap-2 text-white/60 font-mono-ems text-sm">
+            <Loader2 className="animate-spin" size={16} /> Loading...
+          </div>
+        ) : items.length === 0 ? (
+          <div className="border border-white/10 p-10 text-center text-white/50 font-mono-ems text-xs tracking-widest">
+            NO IMAGES YET
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="gallery-admin-grid">
+            {items.map((it) => (
+              <div
+                key={it.id}
+                className="tactical-card relative overflow-hidden"
+                data-testid={`gallery-admin-${it.id.slice(0, 8)}`}
+              >
+                <div className="relative aspect-square bg-[#0d0d0d]">
+                  <img
+                    src={it.image_data}
+                    alt={it.caption}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <button
+                    onClick={() => remove(it)}
+                    aria-label="Delete"
+                    data-testid={`gallery-delete-${it.id.slice(0, 8)}`}
+                    className="absolute top-1 right-1 p-1.5 bg-black/70 text-white/80 hover:text-[#ef4444]"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+                {it.caption && (
+                  <div className="px-2 py-1.5 text-[11px] text-white/80 line-clamp-2 border-t border-white/10">
+                    {it.caption}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}

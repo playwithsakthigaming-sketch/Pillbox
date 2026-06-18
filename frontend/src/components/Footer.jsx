@@ -36,10 +36,11 @@ export default function Footer() {
             <div className="flex flex-col gap-1.5 text-sm">
               <Link to="/" className="text-white/70 hover:text-white">Home</Link>
               <Link to="/staff" className="text-white/70 hover:text-white">Roster</Link>
-              <Link to="/idcard" className="text-white/70 hover:text-white">ID Card</Link>
+              <Link to="/gallery" className="text-white/70 hover:text-white">Gallery</Link>
               <Link to="/apply" className="text-white/70 hover:text-white">Join Us</Link>
               <Link to="/status" className="text-white/70 hover:text-white">Check Status</Link>
-              <Link to="/admin" className="text-white/40 hover:text-white text-xs mt-2">Admin</Link>
+              <Link to="/idcard" className="text-white/40 hover:text-white text-xs mt-2">ID Card (Admin)</Link>
+              <Link to="/admin" className="text-white/40 hover:text-white text-xs">Admin</Link>
             </div>
           </div>
 

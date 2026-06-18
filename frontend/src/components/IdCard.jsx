@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { forwardRef } from "react";
 
-// Vertical EMS ID badge component
+// Vertical EMS ID badge
 const IdCard = forwardRef(function IdCard({ data }, ref) {
   const {
     full_name = "RECRUIT NAME",
@@ -12,11 +12,11 @@ const IdCard = forwardRef(function IdCard({ data }, ref) {
     photo_url = "",
     issued = new Date().toISOString().slice(0, 10),
     expires = "2099-12-31",
-    division = "PILLBOX EMS",
+    division = "TEAM PILLBOX",
   } = data;
 
-  // Simple barcode stripes
-  const bars = Array.from({ length: 42 }, (_, i) =>
+  // Compact barcode
+  const bars = Array.from({ length: 36 }, (_, i) =>
     [1, 3, 2, 4, 1, 2, 3, 1, 4, 2, 1, 3][i % 12]
   );
 
@@ -30,15 +30,15 @@ const IdCard = forwardRef(function IdCard({ data }, ref) {
       <div
         ref={ref}
         data-testid="id-card-preview"
-        className="relative w-[320px] aspect-[5/8] bg-[#0d0d0d] text-white border border-white/15 shadow-[0_30px_80px_-20px_rgba(42,109,244,0.35)] overflow-hidden"
+        className="relative w-[320px] bg-[#0d0d0d] text-white border border-white/15 shadow-[0_30px_80px_-20px_rgba(42,109,244,0.35)] overflow-hidden flex flex-col"
         style={{ transformStyle: "preserve-3d" }}
       >
         {/* Background pattern */}
-        <div className="absolute inset-0 cross-pattern opacity-50" />
-        <div className="noise absolute inset-0" />
+        <div className="absolute inset-0 cross-pattern opacity-50 pointer-events-none" />
+        <div className="noise absolute inset-0 pointer-events-none" />
 
         {/* Top stripe */}
-        <div className="relative h-12 bg-[#2A6DF4] flex items-center justify-between px-3 border-b-2 border-black">
+        <div className="relative h-12 bg-[#2A6DF4] flex items-center justify-between px-3 border-b-2 border-black z-10">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 bg-white flex items-center justify-center p-0.5">
               <img
@@ -55,8 +55,8 @@ const IdCard = forwardRef(function IdCard({ data }, ref) {
           <span className="font-mono-ems text-[9px] tracking-widest">FIVEM·RP</span>
         </div>
 
-        {/* Photo */}
-        <div className="relative mx-3 mt-3 aspect-square bg-[#121212] border border-white/15 overflow-hidden">
+        {/* Photo — fixed height keeps things from blowing up on export */}
+        <div className="relative mx-3 mt-3 h-[170px] bg-[#121212] border border-white/15 overflow-hidden z-10">
           {photo_url ? (
             <img
               src={photo_url}
@@ -76,53 +76,53 @@ const IdCard = forwardRef(function IdCard({ data }, ref) {
         </div>
 
         {/* Name + rank */}
-        <div className="px-3 mt-3">
+        <div className="px-3 mt-3 relative z-10">
           <div className="label-ems text-white/50">NAME</div>
-          <div className="font-display font-black text-base uppercase tracking-tight leading-tight">
+          <div className="font-display font-black text-base uppercase tracking-tight leading-tight truncate">
             {full_name}
           </div>
           <div className="label-ems text-white/50 mt-2">RANK</div>
-          <div className="font-display font-bold text-[11px] uppercase tracking-wider text-[#FFB703]">
+          <div className="font-display font-bold text-[11px] uppercase tracking-wider text-[#FFB703] truncate">
             {rank}
           </div>
         </div>
 
         {/* Data grid */}
-        <div className="grid grid-cols-3 gap-1 px-3 mt-3 font-mono-ems text-[9px]">
+        <div className="grid grid-cols-3 gap-2 px-3 mt-3 font-mono-ems text-[9px] relative z-10">
           <div>
             <div className="text-white/40 tracking-widest">CALL</div>
-            <div className="text-white tracking-wider">{callsign}</div>
+            <div className="text-white tracking-wider truncate">{callsign}</div>
           </div>
           <div>
             <div className="text-white/40 tracking-widest">BLOOD</div>
-            <div className="text-white tracking-wider">{blood_type}</div>
+            <div className="text-white tracking-wider truncate">{blood_type}</div>
           </div>
           <div>
             <div className="text-white/40 tracking-widest">BADGE</div>
-            <div className="text-white tracking-wider">{badge_number}</div>
+            <div className="text-white tracking-wider truncate">{badge_number}</div>
           </div>
           <div>
             <div className="text-white/40 tracking-widest">ISSUED</div>
-            <div className="text-white tracking-wider">{issued}</div>
+            <div className="text-white tracking-wider truncate">{issued}</div>
           </div>
           <div className="col-span-2">
             <div className="text-white/40 tracking-widest">EXPIRES</div>
-            <div className="text-white tracking-wider">{expires}</div>
+            <div className="text-white tracking-wider truncate">{expires}</div>
           </div>
         </div>
 
-        {/* Barcode */}
-        <div className="absolute bottom-2 inset-x-3">
-          <div className="flex items-end gap-[1.5px] h-8">
+        {/* Barcode — flow-positioned, not absolute, so it cannot overlap */}
+        <div className="px-3 mt-4 mb-3 relative z-10">
+          <div className="flex items-end gap-[1.5px] h-7">
             {bars.map((h, i) => (
               <div
                 key={i}
-                style={{ width: 2, height: `${h * 25 + 10}%` }}
+                style={{ width: 2, height: `${h * 22 + 18}%` }}
                 className={i % 3 === 0 ? "bg-white" : "bg-white/80"}
               />
             ))}
           </div>
-          <div className="font-mono-ems text-[8px] tracking-[0.3em] text-white/50 mt-1 text-center">
+          <div className="font-mono-ems text-[8px] tracking-[0.3em] text-white/50 mt-1 text-center truncate">
             PILLBOX-EMS-{badge_number}
           </div>
         </div>

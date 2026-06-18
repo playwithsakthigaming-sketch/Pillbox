@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 import IdCard from "../components/IdCard";
+import AdminGate from "../components/AdminGate";
 import { Download, IdCard as IdIcon, RotateCcw } from "lucide-react";
 
 const RANKS = [
@@ -25,10 +26,21 @@ const initial = {
   photo_url: "",
   issued: new Date().toISOString().slice(0, 10),
   expires: `${new Date().getFullYear() + 2}-12-31`,
-  division: "PILLBOX EMS",
+  division: "TEAM PILLBOX",
 };
 
 export default function IdCardPage() {
+  return (
+    <AdminGate
+      title="ID Card Generator"
+      subtitle="Issuing department IDs is restricted to command. Enter the admin token to continue."
+    >
+      <IdCardForm />
+    </AdminGate>
+  );
+}
+
+function IdCardForm() {
   const [form, setForm] = useState(initial);
   const [downloading, setDownloading] = useState(false);
   const cardRef = useRef(null);
