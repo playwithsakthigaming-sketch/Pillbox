@@ -46,13 +46,13 @@ export default function StatusPage() {
 
   const submit = async (e) => {
     e.preventDefault();
+    setError("");
+    setResult(null);
     const clean = ref.trim().toLowerCase().replace(/[^a-f0-9-]/g, "");
     if (clean.length < 4) {
       setError("Enter your full 8-character Ref ID.");
       return;
     }
-    setError("");
-    setResult(null);
     setBusy(true);
     try {
       const r = await api.get(`/applications/status/${clean}`);

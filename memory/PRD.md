@@ -23,13 +23,15 @@ Iteration 3 adds: Discord webhook for applications, admin add/remove/edit staff,
 - New application sent to Discord (webhook) when configured.
 
 ## Implemented (latest)
-- Public endpoints: `GET /api/staff`, `GET /api/staff/{id}`, `POST /api/applications`, `GET /api/stats`.
-- Admin endpoints (require `X-Admin-Token`): `POST /api/admin/login`, `GET /api/admin/applications`, `POST /api/admin/staff`, `PATCH /api/admin/staff/{id}`, `DELETE /api/admin/staff/{id}`.
-- Discord webhook: `POST /api/applications` fires-and-forgets a rich embed to `DISCORD_WEBHOOK_URL` (empty → graceful no-op).
-- Frontend routes: `/`, `/staff`, `/idcard`, `/apply`, `/admin`.
-- Admin page: login, Staff tab (table + Add/Edit/Delete modal), Applications tab (full review).
-- Blue color palette migration complete. Logo wired in Navbar / Footer / Hero / ID card / favicon.
-- Tested end-to-end via testing_agent_v3 — 15/15 backend, all frontend flows green.
+- Public endpoints: `GET /api/staff`, `GET /api/staff/{id}`, `POST /api/applications`, `GET /api/applications/status/{ref}` (full UUID or 8-char prefix), `GET /api/stats`.
+- Admin endpoints (require `X-Admin-Token`): `POST /api/admin/login`, `GET /api/admin/applications`, `POST /api/admin/staff`, `PATCH /api/admin/staff/{id}`, `DELETE /api/admin/staff/{id}`, `PATCH /api/admin/applications/{id}` (status ∈ {accepted, rejected, interview, pending}).
+- Discord webhook: new submissions + every status change post a rich embed to `DISCORD_WEBHOOK_URL`. Empty → graceful no-op.
+- Discord bot DM: when applicant provides `discord_user_id` and status changes to accepted/interview/rejected, the bot DMs them (via `DISCORD_BOT_TOKEN`). Fire-and-forget, never blocks the request.
+- Frontend routes: `/`, `/staff`, `/idcard`, `/apply`, `/status`, `/admin`.
+- Apply form: optional Discord User ID field. Success screen shows large 8-char REF with copy-to-clipboard + "Check My Status" link.
+- Status page (`/status`): public lookup by Ref ID — color-coded status badge (pending/interview/accepted/rejected), command note, timestamps.
+- Admin Applications tab: status badge + 4 action buttons (Accept/Interview/Reject/Re-open) + per-card message textarea.
+- Tested end-to-end (29/29 backend, all frontend flows green).
 
 ## Backlog
 - **P2**: Discord slash-command bot (alternative to webhook) for `/staff-add`, `/staff-remove`.
