@@ -22,6 +22,7 @@ function App() {
             <Route path="/staff" element={<StaffPage />} />
             <Route path="/gallery" element={<GalleryPage />} />
             <Route path="/idcard" element={<IdCardPage />} />
+            <Route path="/id" element={<IdCardPage />} />
             <Route path="/apply" element={<ApplyPage />} />
             <Route path="/status" element={<StatusPage />} />
             <Route path="/admin" element={<AdminPage />} />

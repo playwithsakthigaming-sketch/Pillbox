@@ -44,18 +44,22 @@ export default function StaffPage() {
 
         {/* Filters */}
         <div className="mt-8 inline-flex border border-white/10 bg-[#0d0d0d]">
-          {["ALL", "COMMAND", "FIELD"].map((f) => (
+          {[
+            { value: "ALL", label: "ALL" },
+            { value: "COMMAND", label: "SPECIALTIES" },
+            { value: "FIELD", label: "DOCTORS" },
+          ].map((f) => (
             <button
-              key={f}
-              data-testid={`filter-${f.toLowerCase()}`}
-              onClick={() => setFilter(f)}
+              key={f.value}
+              data-testid={`filter-${f.value.toLowerCase()}`}
+              onClick={() => setFilter(f.value)}
               className={`px-5 py-2.5 font-display font-bold text-xs tracking-[0.2em] uppercase transition-colors ${
-                filter === f
+                filter === f.value
                   ? "bg-[#2A6DF4] text-white"
                   : "text-white/70 hover:text-white"
               }`}
             >
-              {f}
+              {f.label}
             </button>
           ))}
         </div>

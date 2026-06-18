@@ -34,7 +34,7 @@ export default function StaffCard({ staff, index = 0, onClick }) {
         </div>
         {staff.is_command && (
           <span className="absolute top-3 right-3 font-mono-ems text-[9px] tracking-[0.2em] text-[#FFB703] bg-black/60 px-2 py-0.5 border border-[#FFB703]/40">
-            COMMAND
+            SPECIALTIES
           </span>
         )}
         <div className="absolute bottom-3 left-3 right-3">

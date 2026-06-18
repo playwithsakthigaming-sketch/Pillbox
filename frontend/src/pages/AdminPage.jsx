@@ -251,7 +251,7 @@ function StaffManager({ token, onUnauth }) {
                 <th className="px-4 py-3">Rank</th>
                 <th className="px-4 py-3">Badge</th>
                 <th className="px-4 py-3">Yrs</th>
-                <th className="px-4 py-3">Cmd</th>
+                <th className="px-4 py-3">Cat.</th>
                 <th className="px-4 py-3"></th>
               </tr>
             </thead>
@@ -265,9 +265,9 @@ function StaffManager({ token, onUnauth }) {
                   <td className="px-4 py-3 font-mono-ems text-white/70">{s.years_served}</td>
                   <td className="px-4 py-3">
                     {s.is_command ? (
-                      <span className="text-[#FFB703] font-mono-ems text-[10px]">COMMAND</span>
+                      <span className="text-[#FFB703] font-mono-ems text-[10px]">SPECIALTIES</span>
                     ) : (
-                      <span className="text-white/40 font-mono-ems text-[10px]">FIELD</span>
+                      <span className="text-white/40 font-mono-ems text-[10px]">DOCTORS</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -487,7 +487,7 @@ function StaffEditor({ initial, isNew, onCancel, onSave }) {
               className="w-4 h-4 accent-[#2A6DF4]"
             />
             <span className="font-mono-ems text-[11px] tracking-widest uppercase text-white/80">
-              Command Personnel
+              Specialties (Command-Level Staff)
             </span>
           </label>
         </div>

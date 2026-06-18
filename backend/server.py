@@ -319,6 +319,42 @@ async def send_gallery_webhook(image_data: str, caption: str) -> None:
     await asyncio.get_event_loop().run_in_executor(None, _send_gallery_webhook, image_data, caption)
 
 
+# ===================== DISCORD ID-CARD DOWNLOAD LOG =====================
+def _send_idcard_log(data: dict) -> None:
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+    if not webhook_url:
+        return
+    embed = {
+        "title": "ID Card Issued",
+        "description": f"**{data.get('full_name') or '—'}** · `{data.get('badge_number') or '—'}`",
+        "color": 0x2A6DF4,
+        "fields": [
+            {"name": "Callsign", "value": data.get("callsign") or "—", "inline": True},
+            {"name": "Rank", "value": data.get("rank") or "—", "inline": True},
+            {"name": "Blood", "value": data.get("blood_type") or "—", "inline": True},
+            {"name": "Issued", "value": data.get("issued") or "—", "inline": True},
+            {"name": "Expires", "value": data.get("expires") or "—", "inline": True},
+            {"name": "Division", "value": data.get("division") or "TEAM PILLBOX", "inline": True},
+        ],
+        "footer": {"text": "Team Pillbox · ID Card download log"},
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        r = requests.post(
+            webhook_url,
+            json={"username": "Pillbox EMS · ID Issuance", "embeds": [embed]},
+            timeout=10,
+        )
+        if r.status_code >= 300:
+            logger.warning(f"ID-card webhook {r.status_code}: {r.text[:200]}")
+    except Exception as e:
+        logger.warning(f"ID-card webhook failed: {e}")
+
+
+async def send_idcard_log(data: dict) -> None:
+    await asyncio.get_event_loop().run_in_executor(None, _send_idcard_log, data)
+
+
 # ===================== SEED DATA =====================
 SEED_STAFF: List[dict] = [
     {
@@ -645,6 +681,35 @@ async def admin_gallery_delete(item_id: str, _: bool = Depends(require_admin)):
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Gallery item not found")
     return {"ok": True, "deleted": item_id}
+
+
+# ===================== ID-CARD DOWNLOAD LOG =====================
+class IdCardLogPayload(BaseModel):
+    full_name: str = ""
+    callsign: str = ""
+    rank: str = ""
+    badge_number: str = ""
+    blood_type: str = ""
+    issued: str = ""
+    expires: str = ""
+    division: str = "TEAM PILLBOX"
+
+
+@api_router.post("/admin/idcard/log")
+async def admin_idcard_log(payload: IdCardLogPayload, _: bool = Depends(require_admin)):
+    data = payload.model_dump()
+    # Persist a record + fire Discord embed
+    record = {
+        **data,
+        "id": str(uuid.uuid4()),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    try:
+        await db.idcard_logs.insert_one(record)
+    except Exception as e:
+        logger.warning(f"idcard log insert failed: {e}")
+    asyncio.create_task(send_idcard_log(data))
+    return {"ok": True, "id": record["id"]}
 
 
 @api_router.patch("/admin/applications/{application_id}", response_model=Application)
