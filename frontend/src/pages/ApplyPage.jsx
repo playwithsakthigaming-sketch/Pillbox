@@ -53,13 +53,13 @@ export default function ApplyPage() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="tactical-card p-8 border-t-2 border-t-[#E63946]"
+          className="tactical-card p-8 border-t-2 border-t-[#2A6DF4]"
         >
           <div className="flex items-center gap-2 font-mono-ems text-[10px] tracking-[0.3em] text-emerald-400">
             <ShieldCheck size={14} /> APPLICATION RECEIVED
           </div>
           <h1 className="h1-ems text-4xl md:text-5xl mt-4">
-            10-4. <span className="text-[#E63946]">Stand by.</span>
+            10-4. <span className="text-[#2A6DF4]">Stand by.</span>
           </h1>
           <p className="text-white/70 mt-4">
             Your file has been logged. A command member will reach out via Discord
@@ -89,12 +89,12 @@ export default function ApplyPage() {
   return (
     <div data-testid="apply-page" className="text-white pt-28 pb-24">
       <header className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="flex items-center gap-3 font-mono-ems text-[10px] tracking-[0.3em] text-[#E63946]">
-          <span className="w-2 h-2 bg-[#E63946] ems-pulse" />
+        <div className="flex items-center gap-3 font-mono-ems text-[10px] tracking-[0.3em] text-[#2A6DF4]">
+          <span className="w-2 h-2 bg-[#2A6DF4] ems-pulse" />
           RECRUITMENT · CHANNEL OPEN
         </div>
         <h1 className="h1-ems text-5xl md:text-7xl mt-3">
-          JOIN THE <span className="text-[#E63946]">DEPARTMENT</span>
+          JOIN THE <span className="text-[#2A6DF4]">DEPARTMENT</span>
         </h1>
         <p className="text-white/70 mt-3 max-w-xl">
           Fill out the form below. Be honest — we read every application. Lying about
@@ -108,7 +108,7 @@ export default function ApplyPage() {
         className="max-w-4xl mx-auto px-6 lg:px-10 mt-10 space-y-6"
       >
         <section className="tactical-card p-6">
-          <div className="label-ems text-[#E63946] mb-4">SECTION 1 · PERSONAL</div>
+          <div className="label-ems text-[#2A6DF4] mb-4">SECTION 1 · PERSONAL</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Full Name *">
               <input data-testid="apply-fullname" value={form.full_name} onChange={set("full_name")} className={inputCls} placeholder="John A. Doe" required />
@@ -130,7 +130,7 @@ export default function ApplyPage() {
         </section>
 
         <section className="tactical-card p-6">
-          <div className="label-ems text-[#E63946] mb-4">SECTION 2 · CONTACT</div>
+          <div className="label-ems text-[#2A6DF4] mb-4">SECTION 2 · CONTACT</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Discord Handle *">
               <input data-testid="apply-discord" value={form.discord} onChange={set("discord")} className={inputCls} placeholder="username#0000" required />
@@ -142,7 +142,7 @@ export default function ApplyPage() {
         </section>
 
         <section className="tactical-card p-6">
-          <div className="label-ems text-[#E63946] mb-4">SECTION 3 · BACKGROUND</div>
+          <div className="label-ems text-[#2A6DF4] mb-4">SECTION 3 · BACKGROUND</div>
           <div className="space-y-4">
             <Field label="Prior RP / EMS Experience">
               <textarea
@@ -194,7 +194,7 @@ export default function ApplyPage() {
 }
 
 const inputCls =
-  "w-full bg-[#121212] border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:border-transparent rounded-sm";
+  "w-full bg-[#121212] border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-[#2A6DF4] focus:border-transparent rounded-sm";
 
 const Field = ({ label, children }) => (
   <label className="block">

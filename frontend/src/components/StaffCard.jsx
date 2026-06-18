@@ -11,7 +11,7 @@ export default function StaffCard({ staff, index = 0, onClick }) {
       transition={{ delay: index * 0.05, duration: 0.4, ease: "easeOut" }}
       whileHover={{ y: -4 }}
       className={`group text-left tactical-card relative overflow-hidden ${
-        staff.is_command ? "border-t-2 border-t-[#E63946]" : ""
+        staff.is_command ? "border-t-2 border-t-[#2A6DF4]" : ""
       }`}
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-[#0d0d0d]">
@@ -25,7 +25,7 @@ export default function StaffCard({ staff, index = 0, onClick }) {
         <div className="absolute top-3 left-3 flex items-center gap-2">
           <span
             className={`w-2 h-2 ${
-              staff.is_command ? "bg-[#E63946]" : "bg-emerald-400"
+              staff.is_command ? "bg-[#2A6DF4]" : "bg-emerald-400"
             } ems-pulse`}
           />
           <span className="font-mono-ems text-[10px] tracking-[0.2em] text-white/80 bg-black/50 px-2 py-0.5 backdrop-blur-sm">
@@ -47,7 +47,7 @@ export default function StaffCard({ staff, index = 0, onClick }) {
 
       <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between font-mono-ems text-[10px] uppercase tracking-widest">
         <span className="text-white/60">{staff.role}</span>
-        <span className="text-[#E63946] group-hover:translate-x-1 transition-transform">
+        <span className="text-[#2A6DF4] group-hover:translate-x-1 transition-transform">
           VIEW →
         </span>
       </div>

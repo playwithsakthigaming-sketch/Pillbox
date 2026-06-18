@@ -1,11 +1,13 @@
-from fastapi import FastAPI, APIRouter, HTTPException
+from fastapi import FastAPI, APIRouter, HTTPException, Header, Depends
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
+import asyncio
+import requests
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
@@ -16,6 +18,13 @@ load_dotenv(ROOT_DIR / '.env')
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
+
+# Configure logging up-front
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Team Pillbox EMS API")
 api_router = APIRouter(prefix="/api")
@@ -28,16 +37,48 @@ class StaffMember(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str
     callsign: str
-    rank: str           # e.g. "Chief", "Captain", "Paramedic", "EMT"
-    role: str           # short role label
+    rank: str
+    role: str
     badge_number: str
-    years_served: int
-    photo_url: str
-    bio: str
-    certifications: List[str]
-    specialties: List[str]
+    years_served: int = 0
+    photo_url: str = ""
+    bio: str = ""
+    certifications: List[str] = Field(default_factory=list)
+    specialties: List[str] = Field(default_factory=list)
     response_count: int = 0
     is_command: bool = False
+    contact_discord: Optional[str] = None
+
+
+class StaffCreate(BaseModel):
+    name: str
+    callsign: str
+    rank: str
+    role: str
+    badge_number: str
+    years_served: int = 0
+    photo_url: str = ""
+    bio: str = ""
+    certifications: List[str] = Field(default_factory=list)
+    specialties: List[str] = Field(default_factory=list)
+    response_count: int = 0
+    is_command: bool = False
+    contact_discord: Optional[str] = None
+
+
+class StaffUpdate(BaseModel):
+    name: Optional[str] = None
+    callsign: Optional[str] = None
+    rank: Optional[str] = None
+    role: Optional[str] = None
+    badge_number: Optional[str] = None
+    years_served: Optional[int] = None
+    photo_url: Optional[str] = None
+    bio: Optional[str] = None
+    certifications: Optional[List[str]] = None
+    specialties: Optional[List[str]] = None
+    response_count: Optional[int] = None
+    is_command: Optional[bool] = None
     contact_discord: Optional[str] = None
 
 
@@ -58,6 +99,59 @@ class Application(ApplicationCreate):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     status: str = "pending"
     submitted_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class AdminLogin(BaseModel):
+    token: str
+
+
+# ===================== AUTH =====================
+def require_admin(x_admin_token: Optional[str] = Header(None)):
+    expected = os.environ.get("ADMIN_TOKEN", "")
+    if not expected or not x_admin_token or x_admin_token != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return True
+
+
+# ===================== DISCORD WEBHOOK =====================
+def _send_discord_application(application: Application) -> None:
+    """Synchronous webhook send — runs in thread executor."""
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
+    if not webhook_url:
+        logger.info("DISCORD_WEBHOOK_URL not set — skipping Discord notification.")
+        return
+    embed = {
+        "title": "New EMS Application Received",
+        "description": f"**Ref ID:** `{application.id[:8].upper()}`",
+        "color": 0x2A6DF4,
+        "fields": [
+            {"name": "Full Name", "value": application.full_name or "—", "inline": True},
+            {"name": "In-Game Name", "value": application.in_game_name or "—", "inline": True},
+            {"name": "Age", "value": str(application.age), "inline": True},
+            {"name": "Discord", "value": application.discord or "—", "inline": True},
+            {"name": "Steam Hex", "value": application.steam_hex or "—", "inline": True},
+            {"name": "Timezone", "value": application.timezone or "—", "inline": True},
+            {"name": "Availability", "value": (application.availability or "—")[:1024], "inline": False},
+            {"name": "Prior Experience", "value": (application.prior_experience or "—")[:1024], "inline": False},
+            {"name": "Why Join", "value": (application.why_join or "—")[:1024], "inline": False},
+        ],
+        "footer": {"text": "Team Pillbox · EMS Recruitment"},
+        "timestamp": application.submitted_at.isoformat(),
+    }
+    payload = {
+        "username": "Pillbox EMS Recruitment",
+        "embeds": [embed],
+    }
+    try:
+        r = requests.post(webhook_url, json=payload, timeout=10)
+        if r.status_code >= 300:
+            logger.warning(f"Discord webhook returned {r.status_code}: {r.text[:200]}")
+    except Exception as e:
+        logger.warning(f"Discord webhook failed: {e}")
+
+
+async def send_discord_application(application: Application) -> None:
+    await asyncio.get_event_loop().run_in_executor(None, _send_discord_application, application)
 
 
 # ===================== SEED DATA =====================
@@ -189,16 +283,13 @@ SEED_STAFF: List[dict] = [
 async def seed_staff():
     existing = await db.staff.count_documents({})
     if existing == 0:
-        docs = []
-        for s in SEED_STAFF:
-            member = StaffMember(**s)
-            docs.append(member.model_dump())
+        docs = [StaffMember(**s).model_dump() for s in SEED_STAFF]
         if docs:
             await db.staff.insert_many(docs)
         logger.info(f"Seeded {len(docs)} staff members")
 
 
-# ===================== ROUTES =====================
+# ===================== PUBLIC ROUTES =====================
 @api_router.get("/")
 async def root():
     return {"message": "Team Pillbox EMS API", "status": "10-8 in service"}
@@ -208,7 +299,6 @@ async def root():
 async def list_staff():
     cursor = db.staff.find({}, {"_id": 0})
     items = await cursor.to_list(500)
-    # Sort: command first, then by years_served desc
     items.sort(key=lambda x: (not x.get("is_command", False), -x.get("years_served", 0)))
     return items
 
@@ -227,11 +317,40 @@ async def create_application(payload: ApplicationCreate):
     doc = app_obj.model_dump()
     doc["submitted_at"] = doc["submitted_at"].isoformat()
     await db.applications.insert_one(doc)
+    # Fire-and-forget Discord notification
+    asyncio.create_task(send_discord_application(app_obj))
     return app_obj
 
 
-@api_router.get("/applications", response_model=List[Application])
-async def list_applications():
+@api_router.get("/stats")
+async def stats():
+    staff_count = await db.staff.count_documents({})
+    apps_count = await db.applications.count_documents({})
+    cursor = db.staff.aggregate([
+        {"$group": {"_id": None, "total": {"$sum": "$response_count"}}}
+    ])
+    total_responses = 0
+    async for row in cursor:
+        total_responses = row.get("total", 0)
+    return {
+        "active_personnel": staff_count,
+        "applications_received": apps_count,
+        "total_responses": total_responses,
+        "years_in_service": 8,
+    }
+
+
+# ===================== ADMIN ROUTES =====================
+@api_router.post("/admin/login")
+async def admin_login(payload: AdminLogin):
+    expected = os.environ.get("ADMIN_TOKEN", "")
+    if not expected or payload.token != expected:
+        raise HTTPException(status_code=401, detail="Invalid admin token")
+    return {"ok": True, "token": expected}
+
+
+@api_router.get("/admin/applications", response_model=List[Application])
+async def list_applications(_: bool = Depends(require_admin)):
     cursor = db.applications.find({}, {"_id": 0}).sort("submitted_at", -1)
     items = await cursor.to_list(500)
     for it in items:
@@ -243,22 +362,31 @@ async def list_applications():
     return items
 
 
-@api_router.get("/stats")
-async def stats():
-    staff_count = await db.staff.count_documents({})
-    apps_count = await db.applications.count_documents({})
-    total_responses_cursor = db.staff.aggregate([
-        {"$group": {"_id": None, "total": {"$sum": "$response_count"}}}
-    ])
-    total_responses = 0
-    async for row in total_responses_cursor:
-        total_responses = row.get("total", 0)
-    return {
-        "active_personnel": staff_count,
-        "applications_received": apps_count,
-        "total_responses": total_responses,
-        "years_in_service": 8,
-    }
+@api_router.post("/admin/staff", response_model=StaffMember)
+async def admin_create_staff(payload: StaffCreate, _: bool = Depends(require_admin)):
+    member = StaffMember(**payload.model_dump())
+    await db.staff.insert_one(member.model_dump())
+    return member
+
+
+@api_router.patch("/admin/staff/{staff_id}", response_model=StaffMember)
+async def admin_update_staff(staff_id: str, payload: StaffUpdate, _: bool = Depends(require_admin)):
+    updates = {k: v for k, v in payload.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    res = await db.staff.update_one({"id": staff_id}, {"$set": updates})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+    doc = await db.staff.find_one({"id": staff_id}, {"_id": 0})
+    return doc
+
+
+@api_router.delete("/admin/staff/{staff_id}")
+async def admin_delete_staff(staff_id: str, _: bool = Depends(require_admin)):
+    res = await db.staff.delete_one({"id": staff_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Staff member not found")
+    return {"ok": True, "deleted": staff_id}
 
 
 app.include_router(api_router)
@@ -270,12 +398,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
 
 @app.on_event("shutdown")

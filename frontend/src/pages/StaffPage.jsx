@@ -28,13 +28,13 @@ export default function StaffPage() {
   return (
     <div data-testid="staff-page" className="text-white pt-28 pb-16">
       <header className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="flex items-center gap-3 font-mono-ems text-[10px] tracking-[0.3em] text-[#E63946]">
-          <span className="w-2 h-2 bg-[#E63946] ems-pulse" />
+        <div className="flex items-center gap-3 font-mono-ems text-[10px] tracking-[0.3em] text-[#2A6DF4]">
+          <span className="w-2 h-2 bg-[#2A6DF4] ems-pulse" />
           PERSONNEL · ROSTER · LIVE
         </div>
         <div className="mt-3 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <h1 className="h1-ems text-5xl md:text-7xl">
-            THE <span className="text-[#E63946]">ROSTER</span>
+            THE <span className="text-[#2A6DF4]">ROSTER</span>
           </h1>
           <p className="text-white/70 max-w-md">
             Click any operator to pull their MDT personnel record — certifications, response
@@ -51,7 +51,7 @@ export default function StaffPage() {
               onClick={() => setFilter(f)}
               className={`px-5 py-2.5 font-display font-bold text-xs tracking-[0.2em] uppercase transition-colors ${
                 filter === f
-                  ? "bg-[#E63946] text-white"
+                  ? "bg-[#2A6DF4] text-white"
                   : "text-white/70 hover:text-white"
               }`}
             >

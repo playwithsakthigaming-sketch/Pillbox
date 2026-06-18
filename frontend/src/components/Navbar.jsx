@@ -1,10 +1,9 @@
 import { Link, NavLink } from "react-router-dom";
-import { Activity } from "lucide-react";
 
 const links = [
   { to: "/", label: "Home", id: "nav-home" },
   { to: "/staff", label: "Roster", id: "nav-staff" },
-  { to: "/id-card", label: "ID Card", id: "nav-idcard" },
+  { to: "/idcard", label: "ID Card", id: "nav-idcard" },
   { to: "/apply", label: "Join Us", id: "nav-apply" },
 ];
 
@@ -20,9 +19,12 @@ export default function Navbar() {
           data-testid="navbar-logo"
           className="flex items-center gap-3 group"
         >
-          <span className="relative flex items-center justify-center w-9 h-9 bg-[#E63946] text-white">
-            <span className="absolute inset-0 ems-pulse" />
-            <Activity size={18} strokeWidth={3} />
+          <span className="relative flex items-center justify-center w-10 h-10 bg-white/5 border border-white/10 p-1">
+            <img
+              src="/assets/pillbox-logo.webp"
+              alt="Team Pillbox"
+              className="w-full h-full object-contain"
+            />
           </span>
           <div className="flex flex-col leading-none">
             <span className="font-display font-black tracking-tight text-base text-white">
@@ -44,7 +46,7 @@ export default function Navbar() {
               className={({ isActive }) =>
                 `px-4 py-2 text-xs font-display font-bold uppercase tracking-[0.18em] transition-colors ${
                   isActive
-                    ? "text-white bg-white/5 border-b-2 border-[#E63946]"
+                    ? "text-white bg-white/5 border-b-2 border-[#2A6DF4]"
                     : "text-white/70 hover:text-white"
                 }`
               }

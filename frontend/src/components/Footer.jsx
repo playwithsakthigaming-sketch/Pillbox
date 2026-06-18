@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Activity } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -11,8 +10,12 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="flex items-center justify-center w-8 h-8 bg-[#E63946] text-white">
-                <Activity size={16} strokeWidth={3} />
+              <span className="flex items-center justify-center w-9 h-9 bg-white/5 border border-white/10 p-1">
+                <img
+                  src="/assets/pillbox-logo.webp"
+                  alt="Team Pillbox"
+                  className="w-full h-full object-contain"
+                />
               </span>
               <span className="font-display font-black tracking-tight text-white">
                 TEAM PILLBOX · EMS
@@ -23,7 +26,7 @@ export default function Footer() {
               Operating across Los Santos and Blaine County in the FiveM RP community.
             </p>
             <div className="font-mono-ems text-[10px] text-white/40 pt-2">
-              <span className="text-[#E63946]">●</span> ON-AIR · DISPATCH-7 ·
+              <span className="text-[#2A6DF4]">●</span> ON-AIR · DISPATCH-7 ·
               SECTOR L-S
             </div>
           </div>
@@ -33,8 +36,9 @@ export default function Footer() {
             <div className="flex flex-col gap-1.5 text-sm">
               <Link to="/" className="text-white/70 hover:text-white">Home</Link>
               <Link to="/staff" className="text-white/70 hover:text-white">Roster</Link>
-              <Link to="/id-card" className="text-white/70 hover:text-white">ID Card</Link>
+              <Link to="/idcard" className="text-white/70 hover:text-white">ID Card</Link>
               <Link to="/apply" className="text-white/70 hover:text-white">Join Us</Link>
+              <Link to="/admin" className="text-white/40 hover:text-white text-xs mt-2">Admin</Link>
             </div>
           </div>
 

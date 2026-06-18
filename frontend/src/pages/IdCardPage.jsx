@@ -72,12 +72,12 @@ export default function IdCardPage() {
   return (
     <div data-testid="idcard-page" className="text-white pt-28 pb-24">
       <header className="max-w-7xl mx-auto px-6 lg:px-10">
-        <div className="flex items-center gap-3 font-mono-ems text-[10px] tracking-[0.3em] text-[#E63946]">
-          <span className="w-2 h-2 bg-[#E63946] ems-pulse" />
+        <div className="flex items-center gap-3 font-mono-ems text-[10px] tracking-[0.3em] text-[#2A6DF4]">
+          <span className="w-2 h-2 bg-[#2A6DF4] ems-pulse" />
           DEPARTMENT ISSUE · ID CARD GENERATOR
         </div>
         <h1 className="h1-ems text-5xl md:text-7xl mt-3">
-          ISSUE YOUR <span className="text-[#E63946]">BADGE</span>
+          ISSUE YOUR <span className="text-[#2A6DF4]">BADGE</span>
         </h1>
         <p className="text-white/70 mt-3 max-w-xl">
           Build your own Team Pillbox EMS identification card. Fill the form, the
@@ -89,7 +89,7 @@ export default function IdCardPage() {
         {/* Form */}
         <div className="lg:col-span-3 space-y-5">
           <div className="tactical-card p-6">
-            <div className="label-ems text-[#E63946] mb-4">SECTION A · IDENTIFICATION</div>
+            <div className="label-ems text-[#2A6DF4] mb-4">SECTION A · IDENTIFICATION</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Full Name" testId="id-full-name">
                 <input
@@ -158,7 +158,7 @@ export default function IdCardPage() {
           </div>
 
           <div className="tactical-card p-6">
-            <div className="label-ems text-[#E63946] mb-4">SECTION B · DATES</div>
+            <div className="label-ems text-[#2A6DF4] mb-4">SECTION B · DATES</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Issued">
                 <input
@@ -182,7 +182,7 @@ export default function IdCardPage() {
           </div>
 
           <div className="tactical-card p-6">
-            <div className="label-ems text-[#E63946] mb-4">SECTION C · PHOTO</div>
+            <div className="label-ems text-[#2A6DF4] mb-4">SECTION C · PHOTO</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field label="Photo URL">
                 <input
@@ -199,7 +199,7 @@ export default function IdCardPage() {
                   accept="image/*"
                   onChange={handlePhoto}
                   data-testid="id-input-photo-file"
-                  className="block w-full text-xs font-mono-ems text-white/70 file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-[#E63946] file:text-white file:font-display file:font-bold file:tracking-wider file:uppercase file:cursor-pointer"
+                  className="block w-full text-xs font-mono-ems text-white/70 file:mr-3 file:py-2 file:px-3 file:border-0 file:bg-[#2A6DF4] file:text-white file:font-display file:font-bold file:tracking-wider file:uppercase file:cursor-pointer"
                 />
               </Field>
             </div>
@@ -242,7 +242,7 @@ export default function IdCardPage() {
 }
 
 const inputCls =
-  "w-full bg-[#121212] border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/30 font-mono-ems focus:outline-none focus:ring-2 focus:ring-[#E63946] focus:border-transparent rounded-sm";
+  "w-full bg-[#121212] border border-white/10 px-3 py-2.5 text-sm text-white placeholder:text-white/30 font-mono-ems focus:outline-none focus:ring-2 focus:ring-[#2A6DF4] focus:border-transparent rounded-sm";
 
 const Field = ({ label, children }) => (
   <label className="block">

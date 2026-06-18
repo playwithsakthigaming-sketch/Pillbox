@@ -30,7 +30,7 @@ const IdCard = forwardRef(function IdCard({ data }, ref) {
       <div
         ref={ref}
         data-testid="id-card-preview"
-        className="relative w-[320px] aspect-[5/8] bg-[#0d0d0d] text-white border border-white/15 shadow-[0_30px_80px_-20px_rgba(230,57,70,0.35)] overflow-hidden"
+        className="relative w-[320px] aspect-[5/8] bg-[#0d0d0d] text-white border border-white/15 shadow-[0_30px_80px_-20px_rgba(42,109,244,0.35)] overflow-hidden"
         style={{ transformStyle: "preserve-3d" }}
       >
         {/* Background pattern */}
@@ -38,13 +38,15 @@ const IdCard = forwardRef(function IdCard({ data }, ref) {
         <div className="noise absolute inset-0" />
 
         {/* Top stripe */}
-        <div className="relative h-12 bg-[#E63946] flex items-center justify-between px-3 border-b-2 border-black">
+        <div className="relative h-12 bg-[#2A6DF4] flex items-center justify-between px-3 border-b-2 border-black">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-white flex items-center justify-center">
-              <div className="relative w-4 h-4">
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-4 bg-[#E63946]" />
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 w-4 bg-[#E63946]" />
-              </div>
+            <div className="w-7 h-7 bg-white flex items-center justify-center p-0.5">
+              <img
+                src="/assets/pillbox-logo.webp"
+                alt="logo"
+                crossOrigin="anonymous"
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="font-display font-black text-[11px] tracking-widest">
               {division}

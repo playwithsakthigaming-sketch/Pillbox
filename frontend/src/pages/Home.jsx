@@ -31,12 +31,24 @@ export default function Home() {
 
         <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-10 pb-24 pt-32">
           <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center justify-center w-20 h-20 mb-6 bg-white/5 border border-white/15 p-2 backdrop-blur-sm"
+          >
+            <img
+              src="/assets/pillbox-logo.webp"
+              alt="Team Pillbox logo"
+              className="w-full h-full object-contain"
+            />
+          </motion.div>
+          <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex items-center gap-3 font-mono-ems text-[10px] tracking-[0.3em] text-[#E63946]"
+            className="flex items-center gap-3 font-mono-ems text-[10px] tracking-[0.3em] text-[#2A6DF4]"
           >
-            <span className="w-2 h-2 bg-[#E63946] ems-pulse" />
+            <span className="w-2 h-2 bg-[#2A6DF4] ems-pulse" />
             DISPATCH · LIVE · SECTOR LOS SANTOS
           </motion.div>
 
@@ -48,7 +60,7 @@ export default function Home() {
           >
             TEAM
             <br />
-            <span className="text-[#E63946]">PILLBOX</span>
+            <span className="text-[#2A6DF4]">PILLBOX</span>
           </motion.h1>
 
           <motion.p
@@ -83,7 +95,7 @@ export default function Home() {
               View Roster
             </Link>
             <Link
-              to="/id-card"
+              to="/idcard"
               data-testid="hero-idcard-btn"
               className="btn-ghost-ems px-6 py-3.5 inline-flex items-center gap-2"
             >
@@ -114,11 +126,11 @@ export default function Home() {
             .map((_, repeat) => (
               <div key={repeat} className="flex gap-12">
                 <span>● ON THE AIR</span>
-                <span className="text-[#E63946]">● PILLBOX EMS</span>
+                <span className="text-[#2A6DF4]">● PILLBOX EMS</span>
                 <span>● RESPONDING CODE 3</span>
                 <span className="text-[#FFB703]">● TRAINING ACADEMY OPEN</span>
                 <span>● 24/7 DISPATCH</span>
-                <span className="text-[#E63946]">● JOIN THE DEPARTMENT</span>
+                <span className="text-[#2A6DF4]">● JOIN THE DEPARTMENT</span>
               </div>
             ))}
         </div>
@@ -137,7 +149,7 @@ export default function Home() {
                 <span className="absolute top-3 right-3 font-mono-ems text-[10px] text-white/30">
                   0{p.n}
                 </span>
-                <p.icon size={20} className="text-[#E63946]" />
+                <p.icon size={20} className="text-[#2A6DF4]" />
                 <h3 className="font-display font-bold text-lg mt-3">{p.title}</h3>
                 <p className="text-sm text-white/65 mt-2 leading-relaxed">{p.body}</p>
               </div>
@@ -148,11 +160,11 @@ export default function Home() {
 
       {/* CTA */}
       <section className="max-w-7xl mx-auto px-6 lg:px-10 pb-24">
-        <div className="relative overflow-hidden border border-white/10 bg-gradient-to-r from-[#1a0606] via-[#0a0a0a] to-[#0a0a0a]">
+        <div className="relative overflow-hidden border border-white/10 bg-gradient-to-r from-[#061a3a] via-[#0a0a0a] to-[#0a0a0a]">
           <div className="absolute inset-0 cross-pattern opacity-20" />
           <div className="relative p-10 md:p-14 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div>
-              <div className="label-ems text-[#E63946]">RECRUITMENT // OPEN</div>
+              <div className="label-ems text-[#2A6DF4]">RECRUITMENT // OPEN</div>
               <h2 className="h2-ems text-4xl md:text-5xl mt-3">
                 Ready to wear the patch?
               </h2>
@@ -170,7 +182,7 @@ export default function Home() {
                 Submit Application <ArrowRight size={16} />
               </Link>
               <Link
-                to="/id-card"
+                to="/idcard"
                 data-testid="cta-id-btn"
                 className="btn-ghost-ems px-7 py-4 inline-flex items-center gap-2"
               >
@@ -186,9 +198,9 @@ export default function Home() {
 
 const Stat = ({ icon, label, value, testId }) => (
   <div className="bg-[#0a0a0a] p-5">
-    <div className="flex items-center gap-2 text-[#E63946]">
+    <div className="flex items-center gap-2 text-[#2A6DF4]">
       {icon}
-      <span className="label-ems text-[#E63946]/80">{label}</span>
+      <span className="label-ems text-[#2A6DF4]/80">{label}</span>
     </div>
     <div
       data-testid={testId}

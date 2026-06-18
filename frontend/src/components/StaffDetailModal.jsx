@@ -26,7 +26,7 @@ export default function StaffDetailModal({ staff, open, onOpenChange }) {
         {/* Terminal header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-[#121212]">
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 bg-[#E63946] ems-pulse" />
+            <span className="w-2 h-2 bg-[#2A6DF4] ems-pulse" />
             <span className="font-mono-ems text-[10px] tracking-[0.3em] text-white/80">
               MDT // EMS_PERSONNEL_RECORD
             </span>
@@ -46,7 +46,7 @@ export default function StaffDetailModal({ staff, open, onOpenChange }) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
             <div className="absolute bottom-3 left-3">
-              <div className="font-mono-ems text-[10px] tracking-[0.2em] text-[#E63946] bg-black/60 px-2 py-0.5 inline-block">
+              <div className="font-mono-ems text-[10px] tracking-[0.2em] text-[#2A6DF4] bg-black/60 px-2 py-0.5 inline-block">
                 {staff.callsign}
               </div>
             </div>
@@ -55,7 +55,7 @@ export default function StaffDetailModal({ staff, open, onOpenChange }) {
 
           {/* Details */}
           <div className="md:col-span-3 p-6">
-            <div className="label-ems text-[#E63946]">{staff.rank}</div>
+            <div className="label-ems text-[#2A6DF4]">{staff.rank}</div>
             <h2 className="font-display font-black text-3xl mt-1 uppercase tracking-tight leading-none">
               {staff.name}
             </h2>
@@ -93,7 +93,7 @@ export default function StaffDetailModal({ staff, open, onOpenChange }) {
               <ul className="mt-2 space-y-1 text-sm text-white/80">
                 {staff.specialties.map((s) => (
                   <li key={s} className="flex gap-2">
-                    <span className="text-[#E63946]">▸</span>
+                    <span className="text-[#2A6DF4]">▸</span>
                     {s}
                   </li>
                 ))}
